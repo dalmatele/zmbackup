@@ -21,6 +21,33 @@ Features
 * Log management compatible with rsyslog;
 * Sessions stored in a relational database - SQLITE3 only - or TXT file;
 
+Backup & Restore Scope
+------------
+
+The table below documents what zmbackup covers and what falls outside its scope. Items marked **No** are not touched by zmbackup at all — you will need separate tooling (e.g. etckeeper, manual cert exports) to protect them.
+
+| Object | Scope | Backup | Restore | Command |
+|--------|-------|--------|---------|---------|
+| Mailbox | Per user | Yes | Yes | `zmbackup -f -m user@domain` / `zmbackup -r -m <session> user@domain` |
+| Mailbox | All accounts | Yes | Yes | `zmbackup -f -m` / `zmbackup -r -m <session>` |
+| LDAP account entry | Per user | Yes | Yes | `zmbackup -f -ldp user@domain` / `zmbackup -r -ldp <session> user@domain` |
+| LDAP account entry | All accounts | Yes | Yes | `zmbackup -f -ldp` / `zmbackup -r -ldp <session>` |
+| Alias | Per alias | Yes | Yes | `zmbackup -f -al alias@domain` / `zmbackup -r -al <session> alias@domain` |
+| Distribution list | Per list | Yes | Yes | `zmbackup -f -dl list@domain` / `zmbackup -r -dl <session> list@domain` |
+| Signature | Per user | Yes | Yes | `zmbackup -f -sig user@domain` / `zmbackup -r -sig <session> user@domain` |
+| Zimbra component passwords | Internal services | No | No | — |
+| SSL/TLS certificates | Services | No | No | — |
+| Java Keystores (JKS) | Services | No | No | — |
+| Zimbra server config | `/opt/zimbra/conf`, `/etc/zimbra` | No | No | — |
+
+**Notes:**
+- A full backup (`zmbackup -f`) includes both the mailbox and the LDAP entry for each account by default.
+- An incremental backup (`zmbackup -i`) also covers the mailbox and LDAP entry, but only captures changes since the last backup session.
+- Restore-on-account (`zmbackup -r -ro <session> origin@domain dest@domain`) dumps one account's backup into a different destination account.
+- Use `zmbackup -l` to list available session IDs before running a restore.
+- **LDAP restores include password hashes.** The LDAP backup dumps the full LDAP entry via `ldapsearch` as the LDAP admin, which includes the `userPassword` attribute (the hashed password). Restoring an LDAP entry with `zmbackup -r -ldp` (or `zmbackup -r full-*`) will therefore overwrite the account's current password with whatever hash was stored at backup time. Be aware of this before running a restore in production.
+- Server-level configuration, certificates, and Zimbra component passwords are **never read or written** by zmbackup. Back these up independently (e.g. etckeeper for `/etc` directories).
+
 Requirements
 ------------
 
