@@ -146,14 +146,19 @@ To execute a full backup routine, which include by default the mailbox and the l
 $ zmbackup -f
 ```
 
-You can filter for what you want using the options **-m** for Mailbox, **-ldp** for Accounts, **-al** for Alias, and **-dl** for Distribution List. REMEMBER - This options doesn't stack with each other, so don't try -dl and -al at the same time (The script will only broke if you do this).
+You can filter for what you want using the options **-m** for Mailbox, **-ldp** for LDAP account entry only, **-al** for Alias, and **-dl** for Distribution List. REMEMBER - These options don't stack with each other, so don't try -dl and -al at the same time (the script will break if you do this).
 
-**CORRECT**
+To back up **only the mailbox** (no LDAP entry):
 ```
 $ zmbackup -f -m
 ```
 
-**INCORRECT**
+To back up **only the LDAP account entry** (no mailbox — useful when you want account metadata without email data):
+```
+$ zmbackup -f -ldp
+```
+
+**INCORRECT** — options cannot be combined:
 ```
 $ zmbackup -f -m -ldp
 ```
