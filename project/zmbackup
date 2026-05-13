@@ -36,7 +36,7 @@
 ################################################################################
 # zmbackup:
 #
-# 06/02/2021 - Version 1.2.6  - By The Zimbra Community & Lucas Costa Beyeler
+# 06/02/2021 - Version 1.2.7  - By The Zimbra Community & Lucas Costa Beyeler
 #                               <lucas.costab@outlook.com>
 ################################################################################
 # parallel:
@@ -197,7 +197,7 @@ case "$1" in
     show_help
   ;;
   "-v"|"--version" )
-    echo "zmbackup version: 1.2.6"
+    echo "zmbackup version: 1.2.7"
   ;;
   "-m"|"--migrate" )
     checkpid
