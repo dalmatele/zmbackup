@@ -16,10 +16,8 @@
 function ldap_backup()
 {
   TEMP_CLI_OUTPUT=$(mktemp)
-  ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' \
-             -LLL "(&(|(mail=$1)(uid=$1))$2)" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"
-  BASHERRCODE=$?
-  if [[ $BASHERRCODE -eq 0 ]]; then
+  if ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' \
+             -LLL "(&(|(mail=$1)(uid=$1))$2)" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"; then
     logger -i -p local7.info "Zmbackup: LDAP - Backup for account $1 finished."
     export ERRCODE=0
   else
@@ -51,9 +49,7 @@ function mailbox_backup()
     YESTERDAY=$(date -d "$DATE" --date='-48 hours' +%m/%d/%Y)
     AFTER='&'"query=after:\"$YESTERDAY\""
   fi
-  $ZMMAILBOX -t0 -z -m "$1" getRestURL --output "$TEMPDIR"/"$1".tgz "/?fmt=tgz&resolve=skip$AFTER" > "$TEMP_CLI_OUTPUT" 2>&1
-  BASHERRCODE=$?
-  if [[ $BASHERRCODE -eq 0 ]]; then
+  if $ZMMAILBOX -t0 -z -m "$1" getRestURL --output "$TEMPDIR"/"$1".tgz "/?fmt=tgz&resolve=skip$AFTER" > "$TEMP_CLI_OUTPUT" 2>&1; then
     if [[ -s $TEMPDIR/$1.tgz ]]; then
       logger -i -p local7.info "Zmbackup: Mailbox - Backup for account $1 finished."
       export ERRCODE=0
@@ -110,14 +106,16 @@ function ldap_restore()
 function mailbox_restore()
 {
   TEMP_CLI_OUTPUT=$(mktemp)
-  $ZMMAILBOX -t0 -z -m "$2" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1
-  BASHERRCODE=$?
-  if ! [[ $BASHERRCODE -eq 0 ]]; then
+  if $ZMMAILBOX -t0 -z -m "$2" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1; then
+    BASHERRCODE=0
+    if [[ "$ERR"  == *"No such file or directory" ]]; then
+      printf "Account %s has nothing to restore - skipping..." "$2"
+    fi
+  else
+    BASHERRCODE=$?
     printf "Error during the restore process for account %s. Error message below:" "$2"
     printf "\n%s: " "$2"
     cat "$TEMP_CLI_OUTPUT"
-  elif [[ "$ERR"  == *"No such file or directory" ]]; then
-    printf "Account %s has nothing to restore - skipping..." "$2"
   fi
   rm -rf "${TEMP_CLI_OUTPUT:?}"
   return $BASHERRCODE
@@ -142,9 +140,7 @@ function ldap_filter()
       EXIST=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where conclusion_date < '$TODAY' and conclusion_date > '$YESTERDAY' and email='$1'")
     fi
   fi
-  grep -Fxq "$1" /etc/zmbackup/blockedlist.conf
-  BASHERRCODE=$?
-  if [[ $BASHERRCODE -eq 0 ]]; then
+  if grep -Fxq "$1" /etc/zmbackup/blockedlist.conf; then
     echo "WARN: $1 found inside blocked list - Nothing to do."
   elif [[ $EXIST ]]; then
     echo "WARN: $1 already has backup today. Nothing to do."

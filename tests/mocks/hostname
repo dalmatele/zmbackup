@@ -1,0 +1,4 @@
+#!/bin/bash
+# hostname mock
+echo "mail.example.com"
+exit 0

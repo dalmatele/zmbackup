@@ -1,0 +1,4 @@
+#!/bin/bash
+# whoami mock
+echo "${MOCK_WHOAMI_USER:-$(/usr/bin/whoami)}"
+exit 0

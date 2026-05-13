@@ -1,0 +1,4 @@
+#!/bin/bash
+# whereis mock
+echo "${1}: ${MOCK_WHEREIS_OUTPUT:-/usr/bin/${1}}"
+exit 0

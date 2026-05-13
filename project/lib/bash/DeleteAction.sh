@@ -76,7 +76,8 @@ function __DELETEBACKUP(){
   BASHERRCODE=$?
   if [[ $BASHERRCODE -eq 0 ]]; then
     if [[ $SESSION_TYPE == 'TXT' ]]; then
-      grep -v "$1" "${WORKDIR:?}"/sessions.txt > "${WORKDIR:?}"/.sessions.txt
+      # grep -v exits 1 when all lines are filtered out (last session removed); || true prevents set -e from aborting
+      grep -v "$1" "${WORKDIR:?}"/sessions.txt > "${WORKDIR:?}"/.sessions.txt || true
       cat "${WORKDIR:?}"/.sessions.txt > "${WORKDIR:?}"/sessions.txt
       rm -rf "${WORKDIR:?}"/.sessions.txt
     elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then

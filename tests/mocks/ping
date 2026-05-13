@@ -1,0 +1,4 @@
+#!/bin/bash
+# ping mock
+echo "PING example.com (192.168.1.1) 56 bytes"
+exit 0

@@ -1,0 +1,7 @@
+#!/bin/bash
+# ldapadd mock
+if [ "${MOCK_LDAPADD_FAIL:-0}" = "1" ]; then
+  echo "ldap_error: invalid syntax" >&2
+  exit 1
+fi
+exit 0

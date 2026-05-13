@@ -1,0 +1,27 @@
+#!/bin/bash
+# parallel mock - sequential execution
+# Skip flags
+while [[ $# -gt 1 ]]; do
+  case "$1" in
+    --jobs|-j)
+      shift 2
+      ;;
+    --eta|--bar|--will-cite|--no-notice|--halt-on-error|--halt)
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+CMD_TEMPLATE="${1:-}"
+if [[ -z "$CMD_TEMPLATE" ]]; then
+  exit 0
+fi
+
+ret=0
+while IFS= read -r line; do
+  eval "${CMD_TEMPLATE//\{\}/$line}" || ret=$?
+done
+exit $ret

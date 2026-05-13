@@ -22,14 +22,16 @@ function restore_main_mailbox()
     printf "Restore mail process with session %s started at %s" "$1" "$(date)"
     if [[ -n $3 && $2 == *"@"* ]]; then
       TEMP_CLI_OUTPUT=$(mktemp)
-      $ZMMAILBOX -t0 -z -m "$3" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1
-      BASHERRCODE=$?
-      if ! [[ $BASHERRCODE -eq 0 ]]; then
+      if $ZMMAILBOX -t0 -z -m "$3" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1; then
+        BASHERRCODE=0
+        if [[ "$ERR"  == *"No such file or directory" ]]; then
+          printf "Account %s has nothing to restore - skipping..." "$2"
+        fi
+      else
+        BASHERRCODE=$?
         printf "Error during the restore process for account %s. Error message below:" "$2"
         printf "\n%s: " "$2"
         cat "$TEMP_CLI_OUTPUT"
-      elif [[ "$ERR"  == *"No such file or directory" ]]; then
-        printf "Account %s has nothing to restore - skipping..." "$2"
       fi
       rm -rf "${TEMP_CLI_OUTPUT:?}"
     else
