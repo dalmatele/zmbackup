@@ -82,8 +82,15 @@ function mailbox_backup()
 ###############################################################################
 function ldap_restore()
 {
+  local LDAP_DN
+  LDAP_DN=$(grep -m 1 "^dn:" "$WORKDIR"/"$1"/"$2".ldiff | awk '{print $2}')
+  if [[ -z "$LDAP_DN" ]]; then
+    printf "\nError: Could not extract DN from %s/%s/%s.ldiff - skipping LDAP restore for account %s" \
+      "$WORKDIR" "$1" "$2" "$2"
+    return 1
+  fi
   ldapdelete -Z -r -x -H "$LDAPSERVER" -D "$LDAPADMIN" -c -w "$LDAPPASS" \
-    "$(grep ^dn: "$WORKDIR"/"$1"/"$2".ldiff | awk '{print $2}')" > /dev/null 2>&1
+    "$LDAP_DN" > /dev/null 2>&1
   ERR=$( (ldapadd -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" \
            -c -w "$LDAPPASS" -f "$WORKDIR"/"$1"/"$2".ldiff) 2>&1)
   BASHERRCODE=$?
