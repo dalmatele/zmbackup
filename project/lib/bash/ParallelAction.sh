@@ -56,11 +56,14 @@ function mailbox_backup()
   if [[ $BASHERRCODE -eq 0 ]]; then
     if [[ -s $TEMPDIR/$1.tgz ]]; then
       logger -i -p local7.info "Zmbackup: Mailbox - Backup for account $1 finished."
+      export ERRCODE=0
     else
-      logger -i -p local7.info "Zmbackup: Mailbox - Backup for account $1 finished, but the file is empty. Removing..."
+      logger -i -p local7.err "Zmbackup: Mailbox - Backup for account $1 finished, but the file is empty. Removing..."
+      echo "Zmbackup: $1 " | logger -i -p local7.err
+      logger -i -p local7.err < "$TEMP_CLI_OUTPUT"
       rm -rf "$TEMPDIR"/"$1".tgz
+      export ERRCODE=1
     fi
-    export ERRCODE=0
   else
     logger -i -p local7.err "Zmbackup: Mailbox - Backup for account $1 failed. Error message below:"
     echo "Zmbackup: $1 " | logger -i -p local7.err
