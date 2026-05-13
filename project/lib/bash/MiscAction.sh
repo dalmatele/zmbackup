@@ -62,6 +62,9 @@ function load_config(){
     echo "ERROR - zimbra user's .bashrc not found. Can't proceed whitout the file."
     exit 1
   fi
+  if [ -f "/opt/zimbra/.ldaprc" ]; then
+    export LDAPRC=/opt/zimbra/.ldaprc
+  fi
 }
 
 ################################################################################
@@ -277,6 +280,7 @@ function export_vars(){
   export LDAPSERVER
   export LDAPADMIN
   export LDAPPASS
+  export LDAPRC
   export WORKDIR
   export LOCK_BACKUP
   export SESSION_TYPE
