@@ -98,6 +98,7 @@ function ldap_restore()
     printf "\nError during the restore process for account %s. Error message below:" "$2"
     printf "\n%s: %s" "$2" "$ERR"
   fi
+  return $BASHERRCODE
 }
 
 ###############################################################################
@@ -119,6 +120,7 @@ function mailbox_restore()
     printf "Account %s has nothing to restore - skipping..." "$2"
   fi
   rm -rf "${TEMP_CLI_OUTPUT:?}"
+  return $BASHERRCODE
 }
 
 

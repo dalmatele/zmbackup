@@ -126,15 +126,18 @@ case "$1" in
         case "$3" in
           "-a"|"--account"|"-d"|"--domain")
             restore_main_ldap "$4" "$5"
+            ERRCODE=$?
           ;;
           * )
             restore_main_ldap "$3" "$4"
+            ERRCODE=$?
           ;;
         esac
         rm -rf "$PID"
       ;;
       "-m"|"--mail" )
         restore_main_mailbox "$3" "$4" "$5"
+        ERRCODE=$?
         rm -rf "$PID"
       ;;
       "-ro"|"--restoreOnAccount" )
@@ -145,6 +148,7 @@ case "$1" in
         else
           constant
           restore_main_mailbox "$3" "$4" "$5"
+          ERRCODE=$?
           rm -rf "$PID"
         fi
       ;;
@@ -152,7 +156,9 @@ case "$1" in
         if [[ "$2" == "full"* || "$2" == "inc"* ]]; then
           constant
           restore_main_ldap "$2" "$3" "$4"
+          ERRCODE=$?
           restore_main_mailbox "$2" "$3" "$4"
+          [[ $? -ne 0 ]] && ERRCODE=$?
           rm -rf "$PID"
         else
           show_help
@@ -203,4 +209,4 @@ case "$1" in
     printf "\n\nError! Incorrect options\n\n"
   ;;
 esac
-exit 0
+exit "${ERRCODE:-0}"

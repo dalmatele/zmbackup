@@ -35,11 +35,18 @@ function restore_main_mailbox()
     else
       build_listRST "$1" "$2"
       parallel --jobs "$MAX_PARALLEL_PROCESS" "mailbox_restore '$1' '{}'" < "$TEMPACCOUNT"
+      BASHERRCODE=$?
     fi
-    printf "\nRestore mail process with session %s completed at %s\n" "$1" "$(date)"
+    if [[ $BASHERRCODE -eq 0 ]]; then
+      printf "\nRestore mail process with session %s completed at %s\n" "$1" "$(date)"
+    else
+      printf "\nRestore mail process with session %s completed with errors at %s\n" "$1" "$(date)"
+    fi
+    return $BASHERRCODE
   else
     echo "Nothing to do. Closing..."
     rm -rf "$PID"
+    return 0
   fi
 }
 
@@ -61,8 +68,15 @@ function restore_main_ldap()
     echo "Restore LDAP process with session $1 started at $(date)"
     build_listRST "$1" "$2"
     parallel --jobs "$MAX_PARALLEL_PROCESS" "ldap_restore '$1' '{}'" < "$TEMPACCOUNT"
-    echo "Restore LDAP process with session $1 completed at $(date)"
+    BASHERRCODE=$?
+    if [[ $BASHERRCODE -eq 0 ]]; then
+      echo "Restore LDAP process with session $1 completed at $(date)"
+    else
+      echo "Restore LDAP process with session $1 completed with errors at $(date)"
+    fi
+    return $BASHERRCODE
   else
     echo "Nothing to do. Closing..."
+    return 0
   fi
 }
