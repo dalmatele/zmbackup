@@ -77,7 +77,13 @@ function deploy_new() {
   echo -ne '#############         (65%)\r'
   sed -i "s|{ZMBKP_MAIL_SENDER}|${ZMBKP_MAIL_SENDER}|g" "$ZMBKP_CONF"/zmbackup.conf
   echo -ne '#############         (65%)\r'
-  sed -i "s|{OSE_INSTALL_ADDRESS}|${OSE_INSTALL_ADDRESS}|g" "$ZMBKP_CONF"/zmbackup.conf
+  # IPv6 addresses must be wrapped in brackets in URLs (RFC 3986)
+  if [[ "$OSE_INSTALL_ADDRESS" == *:* ]]; then
+    LDAP_ADDRESS="[$OSE_INSTALL_ADDRESS]"
+  else
+    LDAP_ADDRESS="$OSE_INSTALL_ADDRESS"
+  fi
+  sed -i "s|{OSE_INSTALL_ADDRESS}|${LDAP_ADDRESS}|g" "$ZMBKP_CONF"/zmbackup.conf
   echo -ne '##############        (70%)\r'
   sed -i "s|{OSE_INSTALL_LDAPPASS}|${OSE_INSTALL_LDAPPASS}|g" "$ZMBKP_CONF"/zmbackup.conf
   sed -i "s|{SESSION_TYPE}|${SESSION_TYPE}|g" "$ZMBKP_CONF"/zmbackup.conf
