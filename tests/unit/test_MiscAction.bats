@@ -6,7 +6,10 @@ setup() {
   setup_mock_path
   create_workdir
   load_test_config
+  local _saved_exit_trap
+  _saved_exit_trap="$(trap -p EXIT)"
   source "${LIB_DIR}/MiscAction.sh"
+  eval "$_saved_exit_trap"
 }
 
 teardown() {
@@ -114,18 +117,16 @@ teardown() {
 }
 
 @test "load_config: exits 1 when zimbra bashrc is missing" {
-  # Run in a subprocess so source() override doesn't break BATS internals
   run bash -c "
+    export PATH='${MOCKS_DIR}:${PATH}'
+    export LOGFILE='${WORKDIR}/zmbackup.log'
     _fake_conf=\"\$(mktemp)\"
     echo 'TESTVAR=yes' > \"\$_fake_conf\"
-    source() {
-      case \"\$1\" in
-        /etc/zmbackup/zmbackup.conf) builtin source \"\$_fake_conf\" ;;
-        *) builtin source \"\$@\" ;;
-      esac
-    }
+    export ZMBACKUP_CONF=\"\$_fake_conf\"
+    export ZIMBRA_BASHRC='/nonexistent/.bashrc'
     source '${LIB_DIR}/MiscAction.sh'
     load_config
+    rm -f \"\$_fake_conf\"
   "
   [ "$status" -eq 1 ]
   [[ "$output" == *".bashrc not found"* ]]
@@ -133,16 +134,13 @@ teardown() {
 
 @test "load_config: succeeds when both config files exist" {
   run bash -c "
+    export PATH='${MOCKS_DIR}:${PATH}'
+    export LOGFILE='${WORKDIR}/zmbackup.log'
     _fake_conf=\"\$(mktemp)\"
     _fake_bashrc=\"\$(mktemp)\"
     echo 'TESTVAR_CONF=yes' > \"\$_fake_conf\"
-    source() {
-      case \"\$1\" in
-        /etc/zmbackup/zmbackup.conf) builtin source \"\$_fake_conf\" ;;
-        /opt/zimbra/.bashrc)         builtin source \"\$_fake_bashrc\" ;;
-        *) builtin source \"\$@\" ;;
-      esac
-    }
+    export ZMBACKUP_CONF=\"\$_fake_conf\"
+    export ZIMBRA_BASHRC=\"\$_fake_bashrc\"
     source '${LIB_DIR}/MiscAction.sh'
     load_config
     echo \"TESTVAR_CONF=\$TESTVAR_CONF\"
@@ -154,22 +152,14 @@ teardown() {
 
 @test "load_config: exports LDAPRC when ldaprc file is found" {
   run bash -c "
+    export PATH='${MOCKS_DIR}:${PATH}'
+    export LOGFILE='${WORKDIR}/zmbackup.log'
     _fake_conf=\"\$(mktemp)\"
     _fake_bashrc=\"\$(mktemp)\"
     _fake_ldaprc=\"\$(mktemp)\"
-    source() {
-      case \"\$1\" in
-        /etc/zmbackup/zmbackup.conf) builtin source \"\$_fake_conf\" ;;
-        /opt/zimbra/.bashrc)         builtin source \"\$_fake_bashrc\" ;;
-        *) builtin source \"\$@\" ;;
-      esac
-    }
-    test() {
-      case \"\$*\" in
-        \"-f /opt/zimbra/.ldaprc\") return 0 ;;
-        *) builtin test \"\$@\" ;;
-      esac
-    }
+    export ZMBACKUP_CONF=\"\$_fake_conf\"
+    export ZIMBRA_BASHRC=\"\$_fake_bashrc\"
+    export ZIMBRA_LDAPRC=\"\$_fake_ldaprc\"
     source '${LIB_DIR}/MiscAction.sh'
     load_config
     echo \"LDAPRC=\$LDAPRC\"
@@ -382,9 +372,9 @@ teardown() {
 }
 
 @test "validate_config: sets WORKDIR default when empty" {
-  MOCK_WHOAMI_USER="zimbra"
   run bash -c "
     export PATH='${MOCKS_DIR}:${PATH}'
+    export LOGFILE='${WORKDIR}/zmbackup.log'
     export MOCK_WHOAMI_USER='zimbra'
     export BACKUPUSER='zimbra'
     export WORKDIR=''
@@ -394,8 +384,8 @@ teardown() {
     export SESSION_TYPE='TXT'
     export BACKUP_INACTIVE_ACCOUNTS='true'
     source '${LIB_DIR}/MiscAction.sh'
-    validate_config 2>&1 || true
-    echo \"WORKDIR=\$WORKDIR\"
+    trap 'echo \"WORKDIR=\$WORKDIR\"' EXIT
+    validate_config
   "
   [[ "$output" == *"WORKDIR=/opt/zimbra/backup"* ]]
 }

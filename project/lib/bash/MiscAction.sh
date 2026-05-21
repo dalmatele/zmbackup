@@ -66,22 +66,25 @@ function create_temp(){
 # load_config: Load the config file and zimbra's bashrc.
 ################################################################################
 function load_config(){
-  if [ -f "/etc/zmbackup/zmbackup.conf" ]; then
-    source /etc/zmbackup/zmbackup.conf 2> /dev/null
+  local conf="${ZMBACKUP_CONF:-/etc/zmbackup/zmbackup.conf}"
+  local bashrc="${ZIMBRA_BASHRC:-/opt/zimbra/.bashrc}"
+  local ldaprc="${ZIMBRA_LDAPRC:-/opt/zimbra/.ldaprc}"
+  if [ -f "$conf" ]; then
+    source "$conf" 2> /dev/null
   else
     zmlog local7.err "Zmbackup: zmbackup.conf not found."
     echo "ERROR - zmbackup.conf not found. Can't proceed whitout the file."
     exit 1
   fi
-  if [ -f "/opt/zimbra/.bashrc" ]; then
-    source /opt/zimbra/.bashrc 2> /dev/null
+  if [ -f "$bashrc" ]; then
+    source "$bashrc" 2> /dev/null
   else
     zmlog local7.err "Zmbackup: zimbra user's .bashrc not found."
     echo "ERROR - zimbra user's .bashrc not found. Can't proceed whitout the file."
     exit 1
   fi
-  if [ -f "/opt/zimbra/.ldaprc" ]; then
-    export LDAPRC=/opt/zimbra/.ldaprc
+  if [ -f "$ldaprc" ]; then
+    export LDAPRC="$ldaprc"
   fi
 }
 

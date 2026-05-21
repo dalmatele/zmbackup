@@ -25,7 +25,10 @@ destroy_workdir() {
 }
 
 load_test_config() {
+  local _saved_exit_trap
+  _saved_exit_trap="$(trap -p EXIT)"
   source "${LIB_DIR}/MiscAction.sh"
+  eval "$_saved_exit_trap"
   BACKUPUSER="$(/usr/bin/whoami)"
   LDAPSERVER="ldap://127.0.0.1"
   LDAPADMIN="cn=admin,dc=example,dc=com"
