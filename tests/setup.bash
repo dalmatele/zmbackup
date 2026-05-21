@@ -25,6 +25,7 @@ destroy_workdir() {
 }
 
 load_test_config() {
+  source "${LIB_DIR}/MiscAction.sh"
   BACKUPUSER="$(/usr/bin/whoami)"
   LDAPSERVER="ldap://127.0.0.1"
   LDAPADMIN="cn=admin,dc=example,dc=com"
@@ -40,10 +41,11 @@ load_test_config() {
   SSL_ENABLE="false"
   ZMMAILBOX="${MOCKS_DIR}/zmmailbox"
   MAILPORT="443"
+  LOGFILE="${WORKDIR}/zmbackup.log"
   export BACKUPUSER LDAPSERVER LDAPADMIN LDAPPASS ENABLE_EMAIL_NOTIFY
   export EMAIL_NOTIFY EMAIL_SENDER MAX_PARALLEL_PROCESS ROTATE_TIME
   export LOCK_BACKUP SESSION_TYPE BACKUP_INACTIVE_ACCOUNTS SSL_ENABLE
-  export ZMMAILBOX MAILPORT
+  export ZMMAILBOX MAILPORT LOGFILE
 }
 
 init_sqlite3_db() {

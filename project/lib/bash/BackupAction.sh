@@ -109,7 +109,7 @@ function backup_main()
   # If $TEMPACCOUNT is not empty, do a backup, if is do nothing
   if [ -s "$TEMPACCOUNT" ]; then
     notify_begin "$SESSION" "$STYPE"
-    logger -i -p local7.info "Zmbackup: Backup session $SESSION started on $(date)"
+    zmlog local7.info "Zmbackup: Backup session $SESSION started on $(date)"
     echo "Backup session $SESSION started on $(date)"
     if [[ $SESSION_TYPE == 'TXT' ]]; then
       echo "SESSION: $SESSION started on $(date)" >> "$TEMPSESSION"
@@ -139,7 +139,7 @@ function backup_main()
                                          size='$SIZE',status='FINISHED' where \
                                          sessionID='$SESSION'" > /dev/null 2>&1
     fi
-    logger -i -p local7.info "Zmbackup: Backup session $SESSION finished on $(date)"
+    zmlog local7.info "Zmbackup: Backup session $SESSION finished on $(date)"
     echo "Backup session $SESSION finished on $(date)"
   else
     echo "Nothing to do. Closing..."

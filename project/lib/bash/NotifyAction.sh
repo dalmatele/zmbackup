@@ -21,9 +21,9 @@ function notify_begin()
     ERR=$( (sendmail -f "$EMAIL_SENDER" "$EMAIL_NOTIFY" < "$MESSAGE" ) 2>&1)
     BASHERRCODE=$?
     if [[ $BASHERRCODE -eq 0 ]]; then
-      logger -i -p local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine begin."
+      zmlog local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine begin."
     else
-      logger -i -p local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
+      zmlog local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
     fi
   fi
 }
@@ -71,9 +71,9 @@ function notify_finish()
     ERR=$( (sendmail -f "$EMAIL_SENDER" "$EMAIL_NOTIFY" < "$MESSAGE" ) 2>&1)
     BASHERRCODE=$?
     if [[ $BASHERRCODE -eq 0 ]]; then
-      logger -i -p local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine conclusion."
+      zmlog local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine conclusion."
     else
-      logger -i -p local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
+      zmlog local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
     fi
   fi
 }

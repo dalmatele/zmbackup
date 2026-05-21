@@ -29,10 +29,10 @@ function build_listBKP()
       BASHERRCODE=$?
       if [[ $BASHERRCODE -eq 0 ]]; then
         echo "Domain $i found! - Inserting inside the backup queue."
-        logger -i -p local7.info "Domain $i found! - Inserting inside the backup queue."
+        zmlog local7.info "Domain $i found! - Inserting inside the backup queue."
       else
-        logger -i -p local7.err "Zmbackup: LDAP - Can't extract accounts from LDAP - Error below:"
-        logger -i -p local7.err "Zmbackup: $ERR"
+        zmlog local7.err "Zmbackup: LDAP - Can't extract accounts from LDAP - Error below:"
+        zmlog local7.err "Zmbackup: $ERR"
         echo "ERROR - Can't extract accounts from LDAP - See log for more information"
         exit 1
       fi
@@ -41,8 +41,8 @@ function build_listBKP()
     ERR=$( (ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' -LLL "$1" "$2" >> "$TEMPACCOUNT") 2>&1)
     BASHERRCODE=$?
     if [[ $BASHERRCODE -ne 0 ]]; then
-      logger -i -p local7.err "Zmbackup: LDAP - Can't extract accounts from LDAP - Error below:"
-      logger -i -p local7.err "Zmbackup: $ERR"
+      zmlog local7.err "Zmbackup: LDAP - Can't extract accounts from LDAP - Error below:"
+      zmlog local7.err "Zmbackup: $ERR"
       echo "ERROR - Can't extract accounts from LDAP - See log for more information"
     fi
   fi

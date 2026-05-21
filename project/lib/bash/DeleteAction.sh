@@ -29,7 +29,7 @@ function delete_one(){
 ################################################################################
 function delete_old(){
   echo "Removing old backup folders - please wait."
-  logger -i -p local7.info "Zmbhousekeep: Cleaning $WORKDIR from old backup sessions."
+  zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from old backup sessions."
   if [[ $SESSION_TYPE == 'TXT' ]]; then
     OLDEST=$(date  +%Y%m%d%H%M%S -d "-$ROTATE_TIME days")
     grep SESS "$WORKDIR"/sessions.txt | awk '{print $2}'| while read -r LINE; do
@@ -43,7 +43,7 @@ function delete_old(){
     done
     sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
   fi
-  logger -i -p local7.info "Zmbhousekeep: Clean old backups activity concluded."
+  zmlog local7.info "Zmbhousekeep: Clean old backups activity concluded."
 }
 
 ################################################################################
@@ -51,7 +51,7 @@ function delete_old(){
 ################################################################################
 function leeroy_jenkins(){
   echo "LEEROY JENKINS!!!!!"
-  logger -i -p local7.info "Zmbhousekeep: Cleaning $WORKDIR from all the backup sessions."
+  zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from all the backup sessions."
   if [[ $SESSION_TYPE == 'TXT' ]]; then
     grep SESS "$WORKDIR"/sessions.txt | awk '{print $2}'| while read -r LINE; do
       __DELETEBACKUP "$LINE"
@@ -62,7 +62,7 @@ function leeroy_jenkins(){
     done
     sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
   fi
-  logger -i -p local7.info "Zmbhousekeep: Clean old backups activity concluded."
+  zmlog local7.info "Zmbhousekeep: Clean old backups activity concluded."
   echo "All the backups are deleted - Have a nice week :)"
 }
 
@@ -85,11 +85,11 @@ function __DELETEBACKUP(){
       sqlite3 "${WORKDIR:?}"/sessions.sqlite3 "delete from backup_session where sessionID='$1'"
     fi
     echo "Backup session $1 removed."
-    logger -i -p local7.info "Zmbhousekeep: Backup session $1 removed."
+    zmlog local7.info "Zmbhousekeep: Backup session $1 removed."
   else
     echo "Can't remove the file $1 - $ERR"
-    logger -i -p local7.err "Zmbhousekeep: Backup session $1 can't be excluded - See the error message below:"
-    logger -i -p local7.err "Zmbhousekeep: $ERR"
+    zmlog local7.err "Zmbhousekeep: Backup session $1 can't be excluded - See the error message below:"
+    zmlog local7.err "Zmbhousekeep: $ERR"
   fi
 }
 
@@ -98,15 +98,15 @@ function __DELETEBACKUP(){
 ################################################################################
 function clean_empty(){
   echo "Removing empty files - please wait."
-  logger -i -p local7.info "Zmbhousekeep: Cleaning $WORKDIR from empty files."
+  zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from empty files."
   find "$WORKDIR" -type f -size 0 -delete
   BASHERRCODE=$?
   if [[ $BASHERRCODE -eq 0 ]]; then
     echo "Empty files removed with success."
-    logger -i -p local7.info "Zmbhousekeep: Empty files removed with success."
+    zmlog local7.info "Zmbhousekeep: Empty files removed with success."
   else
     echo "Can't remove empty files - $ERR"
-    logger -i -p local7.err "Zmbhousekeep: Can't remove the empty files - See the error message below:"
-    logger -i -p local7.err "Zmbhousekeep: $ERR"
+    zmlog local7.err "Zmbhousekeep: Can't remove the empty files - See the error message below:"
+    zmlog local7.err "Zmbhousekeep: $ERR"
   fi
 }

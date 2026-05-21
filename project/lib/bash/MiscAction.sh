@@ -4,6 +4,24 @@
 ################################################################################
 
 ################################################################################
+# zmlog: Write a log entry to both syslog and $LOGFILE.
+# Options:
+#    $1 - syslog priority (e.g. local7.info, local7.err, local7.warn)
+#    $@ - message text; if omitted, reads from stdin
+################################################################################
+function zmlog(){
+  local priority="$1"; shift
+  local message
+  if [ "$#" -gt 0 ]; then
+    message="$*"
+  else
+    message="$(cat)"
+  fi
+  logger -i -p "$priority" "$message"
+  echo "$(date '+%Y-%m-%d %T') [$priority] $message" >> "$LOGFILE"
+}
+
+################################################################################
 # clear_temp: Clear all the temporary files.
 ################################################################################
 function on_exit(){
@@ -17,7 +35,7 @@ function on_exit(){
   fi
   # shellcheck disable=SC2086
   rm -rf "$TEMPSESSION" "$TEMPACCOUNT" "$TEMPINACCOUNT" "$TEMPDIR" $MESSAGE $TEMPSQL $FAILURE
-  logger -i -p local7.info "Zmbackup: Excluding the temporary files before close."
+  zmlog local7.info "Zmbackup: Excluding the temporary files before close."
 }
 
 #trap the function to be executed if the sript die
@@ -51,14 +69,14 @@ function load_config(){
   if [ -f "/etc/zmbackup/zmbackup.conf" ]; then
     source /etc/zmbackup/zmbackup.conf 2> /dev/null
   else
-    logger -i -p local7.err "Zmbackup: zmbackup.conf not found."
+    zmlog local7.err "Zmbackup: zmbackup.conf not found."
     echo "ERROR - zmbackup.conf not found. Can't proceed whitout the file."
     exit 1
   fi
   if [ -f "/opt/zimbra/.bashrc" ]; then
     source /opt/zimbra/.bashrc 2> /dev/null
   else
-    logger -i -p local7.err "Zmbackup: zimbra user's .bashrc not found."
+    zmlog local7.err "Zmbackup: zimbra user's .bashrc not found."
     echo "ERROR - zimbra user's .bashrc not found. Can't proceed whitout the file."
     exit 1
   fi
@@ -146,94 +164,94 @@ function validate_config(){
 
   if [ -z "$BACKUPUSER" ]; then
   	BACKUPUSER="zimbra"
-    logger -i -p local7.warn "Zmbackup: BACKUPUSER not informed - setting as user zimbra instead."
+    zmlog local7.warn "Zmbackup: BACKUPUSER not informed - setting as user zimbra instead."
   fi
 
   if [ "$(whoami)" != "$BACKUPUSER" ]; then
     echo "You need to be $BACKUPUSER to run this software."
-    logger -i -p local7.err "Zmbackup: You need to be $BACKUPUSER to run this software."
+    zmlog local7.err "Zmbackup: You need to be $BACKUPUSER to run this software."
     exit 2
   fi
 
   if [ -z "$WORKDIR" ]; then
     WORKDIR="/opt/zimbra/backup"
-    logger -i -p local7.warn "Zmbackup: WORKDIR not informed - setting as /opt/zimbra/backup/ instead."
+    zmlog local7.warn "Zmbackup: WORKDIR not informed - setting as /opt/zimbra/backup/ instead."
   fi
 
   if [ -z "$ENABLE_EMAIL_NOTIFY" ]; then
     ENABLE_EMAIL_NOTIFY="all"
-    logger -i -p local7.warn "Zmbackup: ENABLE_EMAIL_NOTIFY not informed - setting as 'all' instead."
+    zmlog local7.warn "Zmbackup: ENABLE_EMAIL_NOTIFY not informed - setting as 'all' instead."
   fi
 
   if [ -z "$EMAIL_SENDER" ]; then
     EMAIL_SENDER="root@"$(hostname -d)
-    logger -i -p local7.warn "Zmbackup: EMAIL_SENDER not informed - setting as $EMAIL_SENDER instead."
+    zmlog local7.warn "Zmbackup: EMAIL_SENDER not informed - setting as $EMAIL_SENDER instead."
   fi
 
   if [ -z "$EMAIL_NOTIFY" ]; then
     EMAIL_NOTIFY="root@localdomain.com"
-    logger -i -p local7.warn "Zmbackup: EMAIL_NOTIFY not informed - setting as root@localdomain.com instead."
+    zmlog local7.warn "Zmbackup: EMAIL_NOTIFY not informed - setting as root@localdomain.com instead."
   fi
 
   if [ -z "$ZMMAILBOX" ]; then
     ZMMAILBOX=$(whereis zmmailbox | cut -d" " -f2)
-    logger -i -p local7.warn "Zmbackup: ZMMAILBOX not defined informed - setting as $ZMMAILBOX instead"
+    zmlog local7.warn "Zmbackup: ZMMAILBOX not defined informed - setting as $ZMMAILBOX instead"
   fi
 
   if [ -z "$MAX_PARALLEL_PROCESS" ]; then
     MAX_PARALLEL_PROCESS="1"
-    logger -i -p local7.warn "Zmbackup: MAX_PARALLEL_PROCESS not informed - disabling."
+    zmlog local7.warn "Zmbackup: MAX_PARALLEL_PROCESS not informed - disabling."
   fi
 
   if [ -z "$LOCK_BACKUP" ]; then
     LOCK_BACKUP=true
-    logger -i -p local7.warn "Zmbackup: LOCK_BACKUP not informed - enabling."
+    zmlog local7.warn "Zmbackup: LOCK_BACKUP not informed - enabling."
   fi
 
   if ! [ -d "$WORKDIR" ]; then
     echo "The directory $WORKDIR doesn't exist."
-    logger -i -p local7.err "Zmbackup: The directory $WORKDIR does not found."
+    zmlog local7.err "Zmbackup: The directory $WORKDIR does not found."
     ERR="true"
   fi
 
   if [ -z "$LDAPADMIN" ]; then
     echo "You need to define the variable LDAPADMIN."
-    logger -i -p local7.err "Zmbackup: You need to define the variable LDAPADMIN."
+    zmlog local7.err "Zmbackup: You need to define the variable LDAPADMIN."
     ERR="true"
   fi
 
   if [ -z "$LDAPPASS" ]; then
     echo "You need to define the variable LDAPPASS."
-    logger -i -p local7.err "Zmbackup: You need to define the variable LDAPPASS."
+    zmlog local7.err "Zmbackup: You need to define the variable LDAPPASS."
     ERR="true"
   fi
 
   if [ -z "$ROTATE_TIME" ]; then
     echo "You need to define the variable ROTATE_TIME."
-    logger -i -p local7.err "Zmbackup: You need to define the variable ROTATE_TIME."
+    zmlog local7.err "Zmbackup: You need to define the variable ROTATE_TIME."
     ERR="true"
   fi
 
   if [ -z "$SESSION_TYPE" ]; then
     echo "You need to define the variable SESSION_TYPE."
-    logger -i -p local7.err "Zmbackup: You need to define the variable SESSION_TYPE."
+    zmlog local7.err "Zmbackup: You need to define the variable SESSION_TYPE."
     ERR="true"
   fi
 
   if [ -z "$BACKUP_INACTIVE_ACCOUNTS" ]; then
     echo "You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
-    logger -i -p local7.err "Zmbackup: You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
+    zmlog local7.err "Zmbackup: You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
     ERR="true"
   fi
 
   if [ -z "$SSL_ENABLE" ]; then
     echo "No value was found for SSL_ENABLE. Setting 'true' for the value."
-    logger -i -p local7.warn "No value was found for SSL_ENABLE. Setting 'true' for the value."
+    zmlog local7.warn "No value was found for SSL_ENABLE. Setting 'true' for the value."
   fi
 
   if [ "$ERR" == "true" ]; then
     echo "Some errors are found inside the config file. Please fix then and try again later."
-    logger -i -p local7.err "Zmbackup: You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
+    zmlog local7.err "Zmbackup: You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
     exit 3
   fi
 }

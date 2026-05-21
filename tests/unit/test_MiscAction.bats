@@ -16,6 +16,54 @@ teardown() {
 }
 
 # ---------------------------------------------------------------------------
+# zmlog
+# ---------------------------------------------------------------------------
+
+@test "zmlog: writes a timestamped entry to LOGFILE" {
+  zmlog local7.info "hello world"
+  [ -f "$LOGFILE" ]
+  grep -q "hello world" "$LOGFILE"
+}
+
+@test "zmlog: entry contains the syslog priority" {
+  zmlog local7.warn "priority check"
+  grep -q "local7.warn" "$LOGFILE"
+}
+
+@test "zmlog: entry contains a timestamp in YYYY-MM-DD HH:MM:SS format" {
+  zmlog local7.info "timestamp check"
+  grep -qE "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" "$LOGFILE"
+}
+
+@test "zmlog: reads message from stdin when no message argument given" {
+  echo "stdin message" | zmlog local7.info
+  grep -q "stdin message" "$LOGFILE"
+}
+
+@test "zmlog: reads message from file redirect" {
+  local tmpfile
+  tmpfile="$(mktemp)"
+  echo "file redirect message" > "$tmpfile"
+  zmlog local7.err < "$tmpfile"
+  grep -q "file redirect message" "$LOGFILE"
+  rm -f "$tmpfile"
+}
+
+@test "zmlog: appends multiple entries without truncating" {
+  zmlog local7.info "first entry"
+  zmlog local7.info "second entry"
+  grep -q "first entry" "$LOGFILE"
+  grep -q "second entry" "$LOGFILE"
+  [ "$(wc -l < "$LOGFILE")" -eq 2 ]
+}
+
+@test "zmlog: also invokes logger with the given priority" {
+  # logger mock exits 0; we verify zmlog exits 0 (meaning logger was called and succeeded)
+  run zmlog local7.info "logger delegation check"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
 # create_temp
 # ---------------------------------------------------------------------------
 

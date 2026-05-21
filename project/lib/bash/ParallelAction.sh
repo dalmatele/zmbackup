@@ -18,12 +18,12 @@ function ldap_backup()
   TEMP_CLI_OUTPUT=$(mktemp)
   if ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' \
              -LLL "(&(|(mail=$1)(uid=$1))$2)" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"; then
-    logger -i -p local7.info "Zmbackup: LDAP - Backup for account $1 finished."
+    zmlog local7.info "Zmbackup: LDAP - Backup for account $1 finished."
     export ERRCODE=0
   else
-    logger -i -p local7.err "Zmbackup: LDAP - Backup for account $1 failed. Error message below:"
-    echo "Zmbackup: $1 " | logger -i -p local7.err
-    logger -i -p local7.err  < "$TEMP_CLI_OUTPUT"
+    zmlog local7.err "Zmbackup: LDAP - Backup for account $1 failed. Error message below:"
+    echo "Zmbackup: $1 " | zmlog local7.err
+    zmlog local7.err  < "$TEMP_CLI_OUTPUT"
     export ERRCODE=1
   fi
   rm -rf "${TEMP_CLI_OUTPUT:?}"
@@ -51,19 +51,19 @@ function mailbox_backup()
   fi
   if $ZMMAILBOX -t0 -z -m "$1" getRestURL --output "$TEMPDIR"/"$1".tgz "/?fmt=tgz&resolve=skip$AFTER" > "$TEMP_CLI_OUTPUT" 2>&1; then
     if [[ -s $TEMPDIR/$1.tgz ]]; then
-      logger -i -p local7.info "Zmbackup: Mailbox - Backup for account $1 finished."
+      zmlog local7.info "Zmbackup: Mailbox - Backup for account $1 finished."
       export ERRCODE=0
     else
-      logger -i -p local7.err "Zmbackup: Mailbox - Backup for account $1 finished, but the file is empty. Removing..."
-      echo "Zmbackup: $1 " | logger -i -p local7.err
-      logger -i -p local7.err < "$TEMP_CLI_OUTPUT"
+      zmlog local7.err "Zmbackup: Mailbox - Backup for account $1 finished, but the file is empty. Removing..."
+      echo "Zmbackup: $1 " | zmlog local7.err
+      zmlog local7.err < "$TEMP_CLI_OUTPUT"
       rm -rf "$TEMPDIR"/"$1".tgz
       export ERRCODE=1
     fi
   else
-    logger -i -p local7.err "Zmbackup: Mailbox - Backup for account $1 failed. Error message below:"
-    echo "Zmbackup: $1 " | logger -i -p local7.err
-    logger -i -p local7.err < "$TEMP_CLI_OUTPUT"
+    zmlog local7.err "Zmbackup: Mailbox - Backup for account $1 failed. Error message below:"
+    echo "Zmbackup: $1 " | zmlog local7.err
+    zmlog local7.err < "$TEMP_CLI_OUTPUT"
     export ERRCODE=1
   fi
   rm -rf "${TEMP_CLI_OUTPUT:?}"
