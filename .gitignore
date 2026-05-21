@@ -2,3 +2,4 @@ OLD/
 *.old
 .idea/
 node_modules/
+.claude
