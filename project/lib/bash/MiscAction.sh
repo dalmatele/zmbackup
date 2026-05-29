@@ -284,6 +284,7 @@ function checkpid(){
 # export_function: Export all the functions used by ParallelAction
 ################################################################################
 function export_function(){
+  export -f zmlog
   export -f __backupMailbox
   export -f __backupFullInc
   export -f __backupLdap
