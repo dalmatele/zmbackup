@@ -86,15 +86,16 @@ function importaccountsSQL(){
 # importaccountsTXT: Migrate the accounts from the txt file to the sqlite3 database
 ###############################################################################
 function importsessionTXT(){
-  sqlite3 "$WORKDIR"/sessions.sqlite3 "select sessionID,conclusion_date from backup_session" | while read -r SESSION; do
-    MONTH=$(echo "$i" | cut -d'|' -f2 | cut -d'-' -f2)
-    DAY=$(echo "$i" | cut -d'|' -f2 | cut -d'-' -f3 | cut -d'T' -f1)
-    YEAR=$(echo "$i" | cut -d'|' -f2 | cut -d'-' -f1)
-    HOUR=$(echo "$i" | cut -d'|' -f2 | cut -d'-' -f3 | cut -d'T' -f2)
-    MINUTE=$(echo "$i" | cut -d'|' -f2 | cut -d'-' -f3 | cut -d':' -f2)
-    echo "SESSION: $SESSION started on $(date -d "$MONTH/$DAY/$YEAR $HOUR:$MINUTE")" >> "$WORKDIR"/sessions.txt
-    sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where sessionID='$SESSION'" | while read -r SESSION; do
-      echo "$SESSION:$ACCOUNT:$MONTH/$DAY/$YEAR" >> "$WORKDIR"/sessions.txt
+  sqlite3 "$WORKDIR"/sessions.sqlite3 "select sessionID,conclusion_date from backup_session" | while read -r ROW; do
+    SESSIONID=$(echo "$ROW" | cut -d'|' -f1)
+    MONTH=$(echo "$ROW" | cut -d'|' -f2 | cut -d'-' -f2)
+    DAY=$(echo "$ROW" | cut -d'|' -f2 | cut -d'-' -f3 | cut -d'T' -f1)
+    YEAR=$(echo "$ROW" | cut -d'|' -f2 | cut -d'-' -f1)
+    HOUR=$(echo "$ROW" | cut -d'|' -f2 | cut -d'T' -f2 | cut -d':' -f1)
+    MINUTE=$(echo "$ROW" | cut -d'|' -f2 | cut -d'T' -f2 | cut -d':' -f2)
+    echo "SESSION: $SESSIONID started on $(date -d "$MONTH/$DAY/$YEAR $HOUR:$MINUTE")" >> "$WORKDIR"/sessions.txt
+    sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where sessionID='$SESSIONID'" | while read -r ACCOUNT; do
+      echo "$SESSIONID:$ACCOUNT:$MONTH/$DAY/$YEAR" >> "$WORKDIR"/sessions.txt
     done
   done
 }
