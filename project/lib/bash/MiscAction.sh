@@ -308,4 +308,5 @@ function export_vars(){
   export SESSION_TYPE
   export MAILPORT
   export ZMMAILBOX
+  export LOGFILE
 }
