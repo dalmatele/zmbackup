@@ -45,14 +45,6 @@ trap on_exit TERM INT EXIT
 # create_temp: Create the temporary files used by the script.
 ################################################################################
 function create_temp(){
-  export readonly TEMPDIR
-  export readonly TEMPACCOUNT
-  export readonly TEMPINACCOUNT
-  export readonly MESSAGE
-  export readonly FAILURE
-  export readonly TEMPSESSION
-  export readonly TEMPSQL
-
   TEMPDIR=$(mktemp -d "$WORKDIR"/XXXX)
   TEMPACCOUNT=$(mktemp)
   TEMPINACCOUNT=$(mktemp)
@@ -60,6 +52,7 @@ function create_temp(){
   FAILURE=$(mktemp)
   TEMPSESSION=$(mktemp)
   TEMPSQL=$(mktemp)
+  export TEMPDIR TEMPACCOUNT TEMPINACCOUNT MESSAGE FAILURE TEMPSESSION TEMPSQL
 }
 
 ################################################################################
@@ -94,30 +87,30 @@ function load_config(){
 function constant(){
   # LDAP OBJECT
   if [ "$BACKUP_INACTIVE_ACCOUNTS" == "true" ]; then
-    export readonly ACOBJECT="(objectclass=zimbraAccount)"
+    declare -gxr ACOBJECT="(objectclass=zimbraAccount)"
   else
-    export readonly ACOBJECT="(&(objectclass=zimbraAccount)(zimbraAccountStatus=active))"
+    declare -gxr ACOBJECT="(&(objectclass=zimbraAccount)(zimbraAccountStatus=active))"
   fi
 
   # Enabling SSL for ZMBACKUP
    if [ "$SSL_ENABLE" == "true" ]; then
-     export readonly WEBPROTO="https"
+     declare -gxr WEBPROTO="https"
    else
-     export readonly WEBPROTO="http"
+     declare -gxr WEBPROTO="http"
    fi
 
-  export readonly DLOBJECT="(objectclass=zimbraDistributionList)"
-  export readonly ALOBJECT="(objectclass=zimbraAlias)"
-  export readonly SIOBJECT="(objectclass=zimbraSignature)"
+  declare -gxr DLOBJECT="(objectclass=zimbraDistributionList)"
+  declare -gxr ALOBJECT="(objectclass=zimbraAlias)"
+  declare -gxr SIOBJECT="(objectclass=zimbraSignature)"
 
   # LDAP FILTER
-  export readonly DLFILTER="mail"
-  export readonly ACFILTER="zimbraMailDeliveryAddress"
-  export readonly ALFILTER="uid"
-  export readonly SIFILTER="zimbraSignatureName"
+  declare -gxr DLFILTER="mail"
+  declare -gxr ACFILTER="zimbraMailDeliveryAddress"
+  declare -gxr ALFILTER="uid"
+  declare -gxr SIFILTER="zimbraSignatureName"
 
   # PID FILE
-  export readonly PID='/opt/zimbra/log/zmbackup.pid'
+  declare -gxr PID='/opt/zimbra/log/zmbackup.pid'
 }
 
 ################################################################################
@@ -127,9 +120,6 @@ function constant(){
 #    $2 - OPTIONAL: Enable Incremental Backup
 ################################################################################
 function sessionvars(){
-  export readonly SESSION
-  export readonly STYPE
-  export readonly INC
   INC='FALSE'
   ls "$WORKDIR"/full* > /dev/null 2>&1
   ERRORCODE=$?
@@ -156,6 +146,7 @@ function sessionvars(){
     STYPE="Signature"
     SESSION="signature-"$(date  +%Y%m%d%H%M%S)
   fi
+  export SESSION STYPE INC
 }
 
 ################################################################################

@@ -106,6 +106,17 @@ teardown() {
   [ -f "$TEMPSQL" ]
 }
 
+@test "create_temp: all temp vars are exported" {
+  create_temp
+  export -p | grep -q ' TEMPDIR='
+  export -p | grep -q ' TEMPACCOUNT='
+  export -p | grep -q ' TEMPINACCOUNT='
+  export -p | grep -q ' MESSAGE='
+  export -p | grep -q ' FAILURE='
+  export -p | grep -q ' TEMPSESSION='
+  export -p | grep -q ' TEMPSQL='
+}
+
 # ---------------------------------------------------------------------------
 # load_config
 # ---------------------------------------------------------------------------
@@ -235,6 +246,29 @@ teardown() {
   [ "$PID" = "/opt/zimbra/log/zmbackup.pid" ]
 }
 
+@test "constant: constants have readonly attribute" {
+  BACKUP_INACTIVE_ACCOUNTS="true"; SSL_ENABLE="false"
+  constant
+  [[ "$(declare -p DLOBJECT)"  == *"-r"* ]]
+  [[ "$(declare -p ALOBJECT)"  == *"-r"* ]]
+  [[ "$(declare -p SIOBJECT)"  == *"-r"* ]]
+  [[ "$(declare -p DLFILTER)"  == *"-r"* ]]
+  [[ "$(declare -p ACFILTER)"  == *"-r"* ]]
+  [[ "$(declare -p ALFILTER)"  == *"-r"* ]]
+  [[ "$(declare -p SIFILTER)"  == *"-r"* ]]
+  [[ "$(declare -p PID)"       == *"-r"* ]]
+  [[ "$(declare -p ACOBJECT)"  == *"-r"* ]]
+  [[ "$(declare -p WEBPROTO)"  == *"-r"* ]]
+}
+
+@test "constant: constants are exported" {
+  BACKUP_INACTIVE_ACCOUNTS="true"; SSL_ENABLE="false"
+  constant
+  export -p | grep -q ' DLOBJECT='
+  export -p | grep -q ' PID='
+  export -p | grep -q ' ACOBJECT='
+}
+
 # ---------------------------------------------------------------------------
 # sessionvars
 # ---------------------------------------------------------------------------
@@ -338,6 +372,14 @@ teardown() {
   mkdir -p "${WORKDIR}/full-20240101120000"
   sessionvars "-sig"
   [[ "$SESSION" == "signature-"* ]]
+}
+
+@test "sessionvars: SESSION STYPE INC are exported" {
+  mkdir -p "${WORKDIR}/full-20240101120000"
+  sessionvars "--full"
+  export -p | grep -q ' SESSION='
+  export -p | grep -q ' STYPE='
+  export -p | grep -q ' INC='
 }
 
 # ---------------------------------------------------------------------------
