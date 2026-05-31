@@ -265,3 +265,33 @@ EOF
   run clean_empty
   [[ "$output" == *"success"* ]]
 }
+
+@test "clean_empty: prints error message when find fails" {
+  local subdir="${WORKDIR}/subdir"
+  mkdir -p "$subdir"
+  touch "${subdir}/empty.ldiff"
+  chmod 555 "$subdir"
+  run clean_empty
+  chmod 755 "$subdir"
+  [[ "$output" == *"Can't remove empty files"* ]]
+}
+
+@test "clean_empty: includes stderr detail in error message when find fails" {
+  local subdir="${WORKDIR}/subdir"
+  mkdir -p "$subdir"
+  touch "${subdir}/empty.ldiff"
+  chmod 555 "$subdir"
+  run clean_empty
+  chmod 755 "$subdir"
+  [[ "$output" == *"Permission denied"* ]]
+}
+
+@test "clean_empty: returns non-zero when find fails" {
+  local subdir="${WORKDIR}/subdir"
+  mkdir -p "$subdir"
+  touch "${subdir}/empty.ldiff"
+  chmod 555 "$subdir"
+  run clean_empty
+  chmod 755 "$subdir"
+  [ "$status" -ne 0 ]
+}

@@ -104,7 +104,7 @@ function __DELETEBACKUP(){
 function clean_empty(){
   echo "Removing empty files - please wait."
   zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from empty files."
-  find "$WORKDIR" -type f -size 0 -delete
+  ERR=$(find "$WORKDIR" -type f -size 0 -delete 2>&1)
   BASHERRCODE=$?
   if [[ $BASHERRCODE -eq 0 ]]; then
     echo "Empty files removed with success."
@@ -113,5 +113,6 @@ function clean_empty(){
     echo "Can't remove empty files - $ERR"
     zmlog local7.err "Zmbhousekeep: Can't remove the empty files - See the error message below:"
     zmlog local7.err "Zmbhousekeep: $ERR"
+    return $BASHERRCODE
   fi
 }
