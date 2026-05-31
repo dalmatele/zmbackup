@@ -55,8 +55,9 @@ setup() {
   [[ "$output" == *"--truncate"* ]]
 }
 
-@test "show_help: lists -m / --migrate option" {
+@test "show_help: lists -mg / --migrate option" {
   run show_help
+  [[ "$output" == *"-mg"* ]]
   [[ "$output" == *"--migrate"* ]]
 }
 
