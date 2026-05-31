@@ -255,7 +255,7 @@ function validate_config(){
 
   if [ "$ERR" == "true" ]; then
     echo "Some errors are found inside the config file. Please fix then and try again later."
-    zmlog local7.err "Zmbackup: You need to define the variable BACKUP_INACTIVE_ACCOUNTS."
+    zmlog local7.err "Zmbackup: Configuration validation failed — check the errors above."
     exit 3
   fi
 }
