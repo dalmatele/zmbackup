@@ -56,6 +56,18 @@ function importsessionSQL(){
           MONTH=$(echo "$i" | cut -c10-11)
           DAY=$(echo "$i" | cut -c12-13)
       ;;
+      "mbox")
+          OPT="Mailbox Backup"
+          YEAR=$(echo "$i" | cut -c6-9)
+          MONTH=$(echo "$i" | cut -c10-11)
+          DAY=$(echo "$i" | cut -c12-13)
+      ;;
+      "signature")
+          OPT="Signature Backup"
+          YEAR=$(echo "$i" | cut -c11-14)
+          MONTH=$(echo "$i" | cut -c15-16)
+          DAY=$(echo "$i" | cut -c17-18)
+      ;;
     esac
     INITIAL=$YEAR'-'$MONTH'-'$DAY"T00:00:00.000"
     CONCLUSION=$YEAR'-'$MONTH'-'$DAY"T00:00:00.000"

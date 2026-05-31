@@ -136,6 +136,50 @@ EOF
   [ "$count" -eq 1 ]
 }
 
+@test "importsessionSQL: imports mbox- session from TXT to SQLITE3" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "mbox-20240106120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_session where sessionID='mbox-20240106120000'")
+  [ "$count" -eq 1 ]
+}
+
+@test "importsessionSQL: mbox- session has correct type label" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "mbox-20240106120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local type
+  type=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select type from backup_session where sessionID='mbox-20240106120000'")
+  [ "$type" = "Mailbox Backup" ]
+}
+
+@test "importsessionSQL: imports signature- session from TXT to SQLITE3" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "signature-20240107120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_session where sessionID='signature-20240107120000'")
+  [ "$count" -eq 1 ]
+}
+
+@test "importsessionSQL: signature- session has correct type label" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "signature-20240107120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local type
+  type=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select type from backup_session where sessionID='signature-20240107120000'")
+  [ "$type" = "Signature Backup" ]
+}
+
 # ---------------------------------------------------------------------------
 # importaccountsSQL
 # ---------------------------------------------------------------------------
