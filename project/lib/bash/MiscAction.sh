@@ -248,6 +248,7 @@ function validate_config(){
   fi
 
   if [ -z "$SSL_ENABLE" ]; then
+    SSL_ENABLE="true"
     echo "No value was found for SSL_ENABLE. Setting 'true' for the value."
     zmlog local7.warn "No value was found for SSL_ENABLE. Setting 'true' for the value."
   fi

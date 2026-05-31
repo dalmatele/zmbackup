@@ -101,6 +101,21 @@ EOF
   [[ "$output" == *"Error"* ]]
 }
 
+@test "restore_main_mailbox: prints skip message when output contains 'No such file or directory'" {
+  SESSION_TYPE="TXT"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  touch "${WORKDIR}/${session}/src@example.com.tgz"
+  cat >> "${WORKDIR}/sessions.txt" << EOF
+SESSION: ${session} started on Mon Jan 01
+${session}:src@example.com:01/01/24
+EOF
+  export MOCK_ZMMAILBOX_NOFILE=1
+  run restore_main_mailbox "$session" "src@example.com" "dst@example.com"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"skipping"* ]]
+}
+
 # ---------------------------------------------------------------------------
 # restore_main_ldap
 # ---------------------------------------------------------------------------
@@ -121,22 +136,17 @@ EOF
   [[ "$output" == *"started"* ]]
 }
 
-@test "restore_main_ldap: prints nothing-to-do when SESSION resolves to a non-empty file" {
+@test "restore_main_ldap: prints nothing-to-do when session not found in TXT" {
   SESSION_TYPE="TXT"
-  # When SESSION variable is a path to a non-empty file, the -s check is true
-  local tmpfile
-  tmpfile="$(mktemp)"
-  echo "content" > "$tmpfile"
-  # Override grep to return the tmpfile path as "SESSION"
-  SESSION="$tmpfile"
-  # Directly test the else branch by setting SESSION to a non-empty file path
-  if [ -s "$SESSION" ]; then
-    result="nothing"
-  else
-    result="restore"
-  fi
-  [ "$result" = "nothing" ]
-  rm -f "$tmpfile"
+  run restore_main_ldap "nonexistent-session" ""
+  [[ "$output" == *"Nothing to do"* ]]
+}
+
+@test "restore_main_ldap: prints nothing-to-do when session not found in SQLITE3" {
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  run restore_main_ldap "nonexistent-session" ""
+  [[ "$output" == *"Nothing to do"* ]]
 }
 
 @test "restore_main_ldap: runs restore for found SQLITE3 session" {

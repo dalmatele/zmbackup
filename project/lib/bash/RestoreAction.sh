@@ -24,7 +24,7 @@ function restore_main_mailbox()
       TEMP_CLI_OUTPUT=$(mktemp)
       if $ZMMAILBOX -t0 -z -m "$3" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1; then
         BASHERRCODE=0
-        if [[ "$ERR"  == *"No such file or directory" ]]; then
+        if grep -q "No such file or directory" "$TEMP_CLI_OUTPUT"; then
           printf "Account %s has nothing to restore - skipping..." "$2"
         fi
       else
@@ -66,7 +66,7 @@ function restore_main_ldap()
   elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
     SESSION=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select * from backup_session where sessionID='$1'")
   fi
-  if ! [ -s "$SESSION" ]; then
+  if [ -n "$SESSION" ]; then
     echo "Restore LDAP process with session $1 started at $(date)"
     build_listRST "$1" "$2"
     parallel --jobs "$MAX_PARALLEL_PROCESS" "ldap_restore '$1' '{}'" < "$TEMPACCOUNT"

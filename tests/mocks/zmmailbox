@@ -4,6 +4,10 @@ if [ "${MOCK_ZMMAILBOX_FAIL:-0}" = "1" ]; then
   echo "ERROR: connection refused" >&2
   exit 1
 fi
+if [ "${MOCK_ZMMAILBOX_NOFILE:-0}" = "1" ]; then
+  echo "No such file or directory"
+  exit 0
+fi
 # For getRestURL, create a non-empty tgz file if output path is specified
 for i in "$@"; do
   if [[ "$i" == --output ]]; then

@@ -170,6 +170,16 @@ teardown() {
   [[ "$output" == *"Error during the restore"* ]]
 }
 
+@test "mailbox_restore: prints skip message and returns 0 when output contains 'No such file or directory'" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  touch "${WORKDIR}/${session}/user@example.com.tgz"
+  export MOCK_ZMMAILBOX_NOFILE=1
+  run mailbox_restore "$session" "user@example.com"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"skipping"* ]]
+}
+
 # ---------------------------------------------------------------------------
 # ldap_filter
 # ---------------------------------------------------------------------------

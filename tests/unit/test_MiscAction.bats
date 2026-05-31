@@ -475,6 +475,12 @@ teardown() {
   [[ "$output" == *"SSL_ENABLE"* ]]
 }
 
+@test "validate_config: sets SSL_ENABLE to true when empty" {
+  SSL_ENABLE=""
+  validate_config
+  [ "$SSL_ENABLE" = "true" ]
+}
+
 @test "validate_config: succeeds with all required values set" {
   run validate_config
   [ "$status" -eq 0 ]

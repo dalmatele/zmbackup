@@ -108,7 +108,7 @@ function mailbox_restore()
   TEMP_CLI_OUTPUT=$(mktemp)
   if $ZMMAILBOX -t0 -z -m "$2" postRestURL '//?fmt=tgz&resolve=skip' "$WORKDIR"/"$1"/"$2".tgz > "$TEMP_CLI_OUTPUT" 2>&1; then
     BASHERRCODE=0
-    if [[ "$ERR"  == *"No such file or directory" ]]; then
+    if grep -q "No such file or directory" "$TEMP_CLI_OUTPUT"; then
       printf "Account %s has nothing to restore - skipping..." "$2"
     fi
   else
