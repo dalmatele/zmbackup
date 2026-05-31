@@ -78,6 +78,18 @@ EOF
   [ "$status" -eq 0 ] || [[ "$output" == *"Can't remove"* ]]
 }
 
+@test "__DELETEBACKUP: returns non-zero when removal fails" {
+  SESSION_TYPE="TXT"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  touch "${WORKDIR}/sessions.txt"
+  # Make WORKDIR non-writable so rm cannot remove the child directory entry
+  chmod 555 "$WORKDIR"
+  run __DELETEBACKUP "$session"
+  chmod 755 "$WORKDIR"
+  [ "$status" -ne 0 ]
+}
+
 # ---------------------------------------------------------------------------
 # delete_one
 # ---------------------------------------------------------------------------
@@ -95,6 +107,22 @@ EOF
   SESSION_TYPE="TXT"
   run delete_one "nonexistent-session"
   [[ "$output" == *"not found"* ]]
+}
+
+@test "delete_one: exits 1 when session not found in TXT" {
+  SESSION_TYPE="TXT"
+  touch "${WORKDIR}/sessions.txt"
+  run delete_one "nonexistent-session"
+  [ "$status" -eq 1 ]
+}
+
+@test "delete_one: exits 0 when session found and removed in TXT" {
+  SESSION_TYPE="TXT"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  echo "SESSION: ${session} started on Mon Jan 01" > "${WORKDIR}/sessions.txt"
+  run delete_one "$session"
+  [ "$status" -eq 0 ]
 }
 
 @test "delete_one: removes existing session in SQLITE3 mode" {
@@ -117,6 +145,25 @@ EOF
   sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   run delete_one "nonexistent-session"
   [[ "$output" == *"not found"* ]]
+}
+
+@test "delete_one: exits 1 when session not found in SQLITE3" {
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  run delete_one "nonexistent-session"
+  [ "$status" -eq 1 ]
+}
+
+@test "delete_one: exits 0 when session found and removed in SQLITE3" {
+  SESSION_TYPE="SQLITE3"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('${session}','2024-01-01T12:00:00.000',
+     '2024-01-01T12:30:00.000','100M','Full Backup','FINISHED')"
+  run delete_one "$session"
+  [ "$status" -eq 0 ]
 }
 
 # ---------------------------------------------------------------------------

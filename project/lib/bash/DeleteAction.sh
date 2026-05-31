@@ -9,6 +9,7 @@
 #    $1 - The session name to be excluded
 ################################################################################
 function delete_one(){
+  local RETCODE=0
   if [[ $SESSION_TYPE == 'TXT' ]]; then
     SESSION=$(grep "$1 started" "$WORKDIR"/sessions.txt -m 1 | awk '{print $2}')
   elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
@@ -17,11 +18,14 @@ function delete_one(){
   if [ -n "$SESSION" ]; then
     echo "Removing session $1 - please wait."
     __DELETEBACKUP "$1"
+    RETCODE=$?
   else
     echo "Session $1 not found in database - ignoring."
+    RETCODE=1
   fi
   rm -rf "$PID"
   unset SESSION
+  return $RETCODE
 }
 
 ################################################################################
@@ -91,6 +95,7 @@ function __DELETEBACKUP(){
     zmlog local7.err "Zmbhousekeep: Backup session $1 can't be excluded - See the error message below:"
     zmlog local7.err "Zmbhousekeep: $ERR"
   fi
+  return $BASHERRCODE
 }
 
 ################################################################################
