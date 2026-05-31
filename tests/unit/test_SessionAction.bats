@@ -128,6 +128,30 @@ EOF
   [[ "$output" == *"Account Backup - Only LDAP"* ]]
 }
 
+@test "list_sessions_txt: prints mbox session with correct description" {
+  mkdir -p "${WORKDIR}/mbox-20240601120000"
+  echo "data" > "${WORKDIR}/mbox-20240601120000/user@example.com.tgz"
+  cat > "${WORKDIR}/sessions.txt" << 'EOF'
+SESSION: mbox-20240601120000 started on Sat Jun 01
+mbox-20240601120000:user@example.com:06/01/24
+SESSION: mbox-20240601120000 completed on Sat Jun 01
+EOF
+  run list_sessions_txt
+  [[ "$output" == *"Mailbox Backup"* ]]
+}
+
+@test "list_sessions_txt: prints signature session with correct description" {
+  mkdir -p "${WORKDIR}/signature-20240701120000"
+  echo "data" > "${WORKDIR}/signature-20240701120000/user@example.com.ldiff"
+  cat > "${WORKDIR}/sessions.txt" << 'EOF'
+SESSION: signature-20240701120000 started on Mon Jul 01
+signature-20240701120000:user@example.com:07/01/24
+SESSION: signature-20240701120000 completed on Mon Jul 01
+EOF
+  run list_sessions_txt
+  [[ "$output" == *"Signature Backup"* ]]
+}
+
 @test "list_sessions_txt: shows only header when sessions.txt is empty" {
   run list_sessions_txt
   [[ "$output" == *"Session Name"* ]]
