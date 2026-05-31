@@ -23,7 +23,7 @@ function notify_begin()
     if [[ $BASHERRCODE -eq 0 ]]; then
       zmlog local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine begin."
     else
-      zmlog local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
+      zmlog local7.warn "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
     fi
   fi
 }
@@ -73,7 +73,7 @@ function notify_finish()
     if [[ $BASHERRCODE -eq 0 ]]; then
       zmlog local7.info "Zmbackup: Mail sent to $EMAIL_NOTIFY to notify about the backup routine conclusion."
     else
-      zmlog local7.info "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
+      zmlog local7.warn "Zmbackup: Cannot send mail for $EMAIL_NOTIFY - $ERR."
     fi
   fi
 }

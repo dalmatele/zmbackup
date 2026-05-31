@@ -56,6 +56,20 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "notify_begin: logs at warn level when sendmail fails" {
+  ENABLE_EMAIL_NOTIFY="all"
+  export MOCK_SENDMAIL_FAIL=1
+  run notify_begin "full-20240101120000" "Full Account"
+  grep -q "\[local7.warn\].*Cannot send mail" "$LOGFILE"
+}
+
+@test "notify_begin: does not log sendmail failure at info level" {
+  ENABLE_EMAIL_NOTIFY="all"
+  export MOCK_SENDMAIL_FAIL=1
+  run notify_begin "full-20240101120000" "Full Account"
+  ! grep -q "\[local7.info\].*Cannot send mail" "$LOGFILE"
+}
+
 # ---------------------------------------------------------------------------
 # notify_finish
 # ---------------------------------------------------------------------------
@@ -145,4 +159,22 @@ teardown() {
   MOCK_SENDMAIL_FAIL=1
   run notify_finish "$session" "Full Account" "FAILURE"
   [ "$status" -eq 0 ]
+}
+
+@test "notify_finish: logs at warn level when sendmail fails" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  export MOCK_SENDMAIL_FAIL=1
+  run notify_finish "$session" "Full Account" "FAILURE"
+  grep -q "\[local7.warn\].*Cannot send mail" "$LOGFILE"
+}
+
+@test "notify_finish: does not log sendmail failure at info level" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  export MOCK_SENDMAIL_FAIL=1
+  run notify_finish "$session" "Full Account" "FAILURE"
+  ! grep -q "\[local7.info\].*Cannot send mail" "$LOGFILE"
 }
