@@ -564,6 +564,29 @@ teardown() {
   rm -f "$pid_file"
 }
 
+@test "checkpid: creates PID file when path contains spaces" {
+  local dir_with_spaces pid_file
+  dir_with_spaces="$(mktemp -d "/tmp/pid dir XXXXXX")"
+  pid_file="${dir_with_spaces}/zmbackup.pid"
+  PID="$pid_file"
+  checkpid
+  [ -f "$pid_file" ]
+  [ "$(cat "$pid_file")" = "$$" ]
+  rm -rf "$dir_with_spaces"
+}
+
+@test "checkpid: overwrites stale PID when path contains spaces" {
+  local dir_with_spaces pid_file
+  dir_with_spaces="$(mktemp -d "/tmp/pid dir XXXXXX")"
+  pid_file="${dir_with_spaces}/zmbackup.pid"
+  echo "99999999" > "$pid_file"
+  PID="$pid_file"
+  run checkpid
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"stale PID"* ]]
+  rm -rf "$dir_with_spaces"
+}
+
 # ---------------------------------------------------------------------------
 # export_function / export_vars
 # ---------------------------------------------------------------------------
