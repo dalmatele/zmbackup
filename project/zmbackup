@@ -146,7 +146,6 @@ case "$1" in
           printf "\n\nError! Please inform the account that should be restored, and when the restore should be placed.\n\n"
           exit 2
         else
-          constant
           restore_main_mailbox "$3" "$4" "$5"
           ERRCODE=$?
           rm -rf "$PID"
@@ -154,7 +153,6 @@ case "$1" in
       ;;
       * )
         if [[ "$2" == "full"* || "$2" == "inc"* ]]; then
-          constant
           restore_main_ldap "$2" "$3" "$4"
           ERRCODE=$?
           restore_main_mailbox "$2" "$3" "$4"
