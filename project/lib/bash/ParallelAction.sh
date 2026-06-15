@@ -128,6 +128,60 @@ function mailbox_restore()
 
 
 ###############################################################################
+# domain_backup: Backup a Zimbra domain LDAP entry.
+# Options:
+# $1 - The domain name (e.g., example.com);
+# $2 - The LDAP object filter for domains (DOMOBJECT).
+###############################################################################
+function domain_backup()
+{
+  DC=",dc="
+  DOMAIN_DN="dc=${1//./$DC}"
+  TEMP_CLI_OUTPUT=$(mktemp)
+  if ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" \
+             -b "$DOMAIN_DN" -s base -LLL "$2" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"; then
+    zmlog local7.info "Zmbackup: LDAP - Domain backup for $1 finished."
+    export ERRCODE=0
+  else
+    zmlog local7.err "Zmbackup: LDAP - Domain backup for $1 failed. Error message below:"
+    zmlog local7.err < "$TEMP_CLI_OUTPUT"
+    export ERRCODE=1
+  fi
+  rm -rf "${TEMP_CLI_OUTPUT:?}"
+}
+
+
+###############################################################################
+# domain_restore: Restore a Zimbra domain LDAP entry.
+# Options:
+# $1 - The session name to be restored;
+# $2 - The domain name (e.g., example.com).
+###############################################################################
+function domain_restore()
+{
+  local LDAP_DN
+  LDAP_DN=$(grep -m 1 "^dn:" "$WORKDIR"/"$1"/"$2".ldiff | awk '{print $2}')
+  if [[ -z "$LDAP_DN" ]]; then
+    printf "\nError: Could not extract DN from %s/%s/%s.ldiff - skipping domain restore for %s" \
+      "$WORKDIR" "$1" "$2" "$2"
+    return 1
+  fi
+  ERR=$( (ldapadd -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" \
+           -c -w "$LDAPPASS" -f "$WORKDIR"/"$1"/"$2".ldiff) 2>&1)
+  BASHERRCODE=$?
+  if ! [[ $BASHERRCODE -eq 0 ]]; then
+    if echo "$ERR" | grep -q "Already exists"; then
+      zmlog local7.info "Zmbackup: Domain $2 already exists - skipping."
+      return 0
+    fi
+    printf "\nError during the restore process for domain %s. Error message below:" "$2"
+    printf "\n%s: %s" "$2" "$ERR"
+  fi
+  return $BASHERRCODE
+}
+
+
+###############################################################################
 # ldap_filter: Filter the account to see if you should do backup or not for that
 #              account.
 # Options:

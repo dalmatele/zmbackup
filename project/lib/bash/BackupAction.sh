@@ -54,6 +54,27 @@ function __backupLdap(){
 }
 
 ################################################################################
+# __backupDomain: Backup a Zimbra domain LDAP entry
+# Options:
+#    $1 - The domain name (e.g., example.com)
+#    $2 - The LDAP object filter (DOMOBJECT)
+################################################################################
+function __backupDomain(){
+  SDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
+  domain_backup "$1" "$2"
+  if [ "$ERRCODE" -eq 0 ]; then
+    if [[ $SESSION_TYPE == 'TXT' ]]; then
+      echo "$SESSION":"$1":"$(date +%m/%d/%y)" >> "$TEMPSESSION"
+    elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
+      EDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
+      SIZE=$(du -ch "$TEMPDIR"/"$1"* | grep total | cut -f1)
+      echo "insert into backup_account (email,sessionID,account_size, initial_date, \
+            conclusion_date) values ('$1','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
+    fi
+  fi
+}
+
+################################################################################
 # __backupMailbox: All the functions used by mailbox backup
 # Options:
 #    $1 - The list of accounts to be backed up
@@ -123,6 +144,8 @@ function backup_main()
       parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupFullInc '{}' '$1'" < "$TEMPACCOUNT"
     elif [[ "$SESSION" == "mbox"* ]]; then
       parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupMailbox '{}' '$1'" < "$TEMPACCOUNT"
+    elif [[ "$SESSION" == "domain"* ]]; then
+      parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupDomain '{}' '$1'" < "$TEMPACCOUNT"
     else
       parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupLdap '{}' '$1'" < "$TEMPACCOUNT"
     fi

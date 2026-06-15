@@ -100,6 +100,12 @@ case "$1" in
         backup_main "$SIOBJECT" "$SIFILTER" "$3" "$4"
         rm -rf "$PID"
       ;;
+      "-dom"|"--domain-backup" )
+        sessionvars "$2"
+        create_temp
+        backup_main "$DOMOBJECT" "$DOMFILTER"
+        rm -rf "$PID"
+      ;;
       * )
         sessionvars "$1"
         create_temp
@@ -133,6 +139,11 @@ case "$1" in
             ERRCODE=$?
           ;;
         esac
+        rm -rf "$PID"
+      ;;
+      "-dom"|"--domain-backup" )
+        restore_main_domain "$3" "$4"
+        ERRCODE=$?
         rm -rf "$PID"
       ;;
       "-m"|"--mail" )

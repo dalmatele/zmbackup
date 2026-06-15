@@ -14,8 +14,10 @@ setup() {
 
   ACOBJECT="(objectclass=zimbraAccount)"
   ACFILTER="zimbraMailDeliveryAddress"
+  DOMOBJECT="(objectclass=zimbraDomain)"
+  DOMFILTER="zimbraDomainName"
   PID="$(mktemp)"
-  export ACOBJECT ACFILTER PID
+  export ACOBJECT ACFILTER DOMOBJECT DOMFILTER PID
 
   # Pre-declare SESSION and INC for export so parallel workers inherit them when tests set them
   export SESSION INC
@@ -25,7 +27,7 @@ setup() {
   export MOCK_ZMMAILBOX_EMPTY=0
 
   # Export functions required by the parallel mock subprocess
-  export -f __backupFullInc __backupLdap __backupMailbox ldap_backup mailbox_backup
+  export -f __backupFullInc __backupLdap __backupMailbox __backupDomain ldap_backup mailbox_backup domain_backup
 
   # Suppress blockedlist lookup in ldap_filter
   grep() {
@@ -112,6 +114,35 @@ teardown() {
   MOCK_LDAPSEARCH_FAIL=1
   __backupLdap "alias@example.com" "(objectclass=zimbraAlias)"
   run grep -q "alias@example.com" "$TEMPSESSION"
+  [ "$status" -ne 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# __backupDomain
+# ---------------------------------------------------------------------------
+
+@test "__backupDomain: writes TXT record on success" {
+  SESSION="domain-20240101120000"
+  SESSION_TYPE="TXT"
+  MOCK_LDAPSEARCH_FAIL=0
+  __backupDomain "example.com" "(objectclass=zimbraDomain)"
+  grep -q "example.com" "$TEMPSESSION"
+}
+
+@test "__backupDomain: writes SQLITE3 record on success" {
+  SESSION="domain-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  MOCK_LDAPSEARCH_FAIL=0
+  __backupDomain "example.com" "(objectclass=zimbraDomain)"
+  grep -q "insert into backup_account" "$TEMPSQL"
+}
+
+@test "__backupDomain: does not write record when domain_backup fails" {
+  SESSION="domain-20240101120000"
+  SESSION_TYPE="TXT"
+  MOCK_LDAPSEARCH_FAIL=1
+  __backupDomain "example.com" "(objectclass=zimbraDomain)"
+  run grep -q "example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
 
@@ -236,6 +267,15 @@ teardown() {
   MOCK_ZMMAILBOX_FAIL=0
   MOCK_ZMMAILBOX_EMPTY=0
   backup_main "$ACOBJECT" "$ACFILTER" "-a" "user@example.com"
+  grep -q "SESSION" "$TEMPSESSION"
+}
+
+@test "backup_main: uses __backupDomain for domain sessions" {
+  SESSION="domain-20240101120000"
+  STYPE="Domain"
+  SESSION_TYPE="TXT"
+  MOCK_LDAPSEARCH_FAIL=0
+  backup_main "$DOMOBJECT" "$DOMFILTER" "-a" "example.com"
   grep -q "SESSION" "$TEMPSESSION"
 }
 

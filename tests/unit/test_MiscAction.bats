@@ -238,6 +238,13 @@ teardown() {
   [ "$ACFILTER" = "zimbraMailDeliveryAddress" ]
   [ "$ALFILTER" = "uid" ]
   [ "$SIFILTER" = "zimbraSignatureName" ]
+  [ "$DOMFILTER" = "zimbraDomainName" ]
+}
+
+@test "constant: sets DOMOBJECT for domain entries" {
+  BACKUP_INACTIVE_ACCOUNTS="true"; SSL_ENABLE="false"
+  constant
+  [[ "$DOMOBJECT" == *"zimbraDomain"* ]]
 }
 
 @test "constant: sets PID path" {
@@ -252,10 +259,12 @@ teardown() {
   [[ "$(declare -p DLOBJECT)"  == *"-r"* ]]
   [[ "$(declare -p ALOBJECT)"  == *"-r"* ]]
   [[ "$(declare -p SIOBJECT)"  == *"-r"* ]]
+  [[ "$(declare -p DOMOBJECT)" == *"-r"* ]]
   [[ "$(declare -p DLFILTER)"  == *"-r"* ]]
   [[ "$(declare -p ACFILTER)"  == *"-r"* ]]
   [[ "$(declare -p ALFILTER)"  == *"-r"* ]]
   [[ "$(declare -p SIFILTER)"  == *"-r"* ]]
+  [[ "$(declare -p DOMFILTER)" == *"-r"* ]]
   [[ "$(declare -p PID)"       == *"-r"* ]]
   [[ "$(declare -p ACOBJECT)"  == *"-r"* ]]
   [[ "$(declare -p WEBPROTO)"  == *"-r"* ]]
@@ -372,6 +381,19 @@ teardown() {
   mkdir -p "${WORKDIR}/full-20240101120000"
   sessionvars "-sig"
   [[ "$SESSION" == "signature-"* ]]
+}
+
+@test "sessionvars: --domain-backup creates domain- session" {
+  mkdir -p "${WORKDIR}/full-20240101120000"
+  sessionvars "--domain-backup"
+  [[ "$SESSION" == "domain-"* ]]
+  [ "$STYPE" = "Domain" ]
+}
+
+@test "sessionvars: -dom creates domain- session" {
+  mkdir -p "${WORKDIR}/full-20240101120000"
+  sessionvars "-dom"
+  [[ "$SESSION" == "domain-"* ]]
 }
 
 @test "sessionvars: SESSION STYPE INC are exported" {
@@ -647,6 +669,30 @@ teardown() {
   source "${LIB_DIR}/ParallelAction.sh"
   export_function
   run bash -c 'declare -F ldap_backup'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports domain_backup" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F domain_backup'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports domain_restore" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F domain_restore'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports __backupDomain" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F __backupDomain'
   [ "$status" -eq 0 ]
 }
 
