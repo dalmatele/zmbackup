@@ -66,14 +66,14 @@ function load_config(){
     source "$conf" 2> /dev/null
   else
     zmlog local7.err "Zmbackup: zmbackup.conf not found."
-    echo "ERROR - zmbackup.conf not found. Can't proceed whitout the file."
+    echo "ERROR - zmbackup.conf not found. Can't proceed without the file."
     exit 1
   fi
   if [ -f "$bashrc" ]; then
     source "$bashrc" 2> /dev/null
   else
     zmlog local7.err "Zmbackup: zimbra user's .bashrc not found."
-    echo "ERROR - zimbra user's .bashrc not found. Can't proceed whitout the file."
+    echo "ERROR - zimbra user's .bashrc not found. Can't proceed without the file."
     exit 1
   fi
   if [ -f "$ldaprc" ]; then
