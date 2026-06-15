@@ -103,9 +103,9 @@ function ldap_restore()
 }
 
 ###############################################################################
-# ldap_restore: Restore a LDAP object inside a file.
+# mailbox_restore: Restore a mailbox from a TGZ backup file.
 # Options:
-# $1 - The session file to be restored;
+# $1 - The session name to be restored;
 # $2 - The account that should be restored.
 ###############################################################################
 function mailbox_restore()
