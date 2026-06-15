@@ -90,6 +90,24 @@ EOF
   [ "$status" -ne 0 ]
 }
 
+@test "__DELETEBACKUP: no stale .sessions.txt temp file left after TXT removal" {
+  SESSION_TYPE="TXT"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  echo "SESSION: ${session} started on Mon Jan 01" > "${WORKDIR}/sessions.txt"
+  __DELETEBACKUP "$session"
+  [ ! -f "${WORKDIR}/.sessions.txt" ]
+}
+
+@test "__DELETEBACKUP: sessions.txt still exists when last session is removed in TXT mode" {
+  SESSION_TYPE="TXT"
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  echo "SESSION: ${session} started on Mon Jan 01" > "${WORKDIR}/sessions.txt"
+  __DELETEBACKUP "$session"
+  [ -f "${WORKDIR}/sessions.txt" ]
+}
+
 # ---------------------------------------------------------------------------
 # delete_one
 # ---------------------------------------------------------------------------
