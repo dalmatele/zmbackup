@@ -102,12 +102,14 @@ function constant(){
   declare -gxr DLOBJECT="(objectclass=zimbraDistributionList)"
   declare -gxr ALOBJECT="(objectclass=zimbraAlias)"
   declare -gxr SIOBJECT="(objectclass=zimbraSignature)"
+  declare -gxr DOMOBJECT="(objectclass=zimbraDomain)"
 
   # LDAP FILTER
   declare -gxr DLFILTER="mail"
   declare -gxr ACFILTER="zimbraMailDeliveryAddress"
   declare -gxr ALFILTER="uid"
   declare -gxr SIFILTER="zimbraSignatureName"
+  declare -gxr DOMFILTER="zimbraDomainName"
 
   # PID FILE
   declare -gxr PID='/opt/zimbra/log/zmbackup.pid'
@@ -145,6 +147,9 @@ function sessionvars(){
   elif [[ $1 == '--signature' || $1 == '-sig' ]]; then
     STYPE="Signature"
     SESSION="signature-"$(date  +%Y%m%d%H%M%S)
+  elif [[ $1 == '-dom' || $1 == '--domain-backup' ]]; then
+    STYPE="Domain"
+    SESSION="domain-"$(date  +%Y%m%d%H%M%S)
   fi
   export SESSION STYPE INC
 }
@@ -300,11 +305,14 @@ function export_function(){
   export -f __backupMailbox
   export -f __backupFullInc
   export -f __backupLdap
+  export -f __backupDomain
   export -f ldap_backup
   export -f ldap_restore
   export -f mailbox_backup
   export -f ldap_filter
   export -f mailbox_restore
+  export -f domain_backup
+  export -f domain_restore
 }
 
 ################################################################################

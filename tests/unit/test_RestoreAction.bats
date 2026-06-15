@@ -21,7 +21,8 @@ setup() {
   export MOCK_LDAPDELETE_FAIL=0
 
   # Export functions required by the parallel mock subprocess
-  export -f mailbox_restore ldap_restore
+  export -f mailbox_restore ldap_restore domain_restore
+  export MOCK_LDAPADD_EXISTS=0
 }
 
 teardown() {
@@ -147,6 +148,83 @@ EOF
   sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   run restore_main_ldap "nonexistent-session" ""
   [[ "$output" == *"Nothing to do"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# restore_main_domain
+# ---------------------------------------------------------------------------
+
+@test "restore_main_domain: prints nothing-to-do when session not in TXT" {
+  SESSION_TYPE="TXT"
+  run restore_main_domain "nonexistent-session" ""
+  [[ "$output" == *"Nothing to do"* ]]
+}
+
+@test "restore_main_domain: restores all domains when session exists in TXT" {
+  SESSION_TYPE="TXT"
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  cat >> "${WORKDIR}/sessions.txt" << EOF
+SESSION: ${session} started on Mon Jan 01
+${session}:example.com:01/01/24
+EOF
+  MOCK_LDAPADD_FAIL=0
+  run restore_main_domain "$session" ""
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"started"* ]]
+}
+
+@test "restore_main_domain: restores specific domain when provided" {
+  SESSION_TYPE="TXT"
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  cat >> "${WORKDIR}/sessions.txt" << EOF
+SESSION: ${session} started on Mon Jan 01
+${session}:example.com:01/01/24
+EOF
+  MOCK_LDAPADD_FAIL=0
+  run restore_main_domain "$session" "example.com"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"started"* ]]
+}
+
+@test "restore_main_domain: restores when session exists in SQLITE3" {
+  SESSION_TYPE="SQLITE3"
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('${session}','2024-01-01T12:00:00.000',
+     '2024-01-01T12:30:00.000','1M','Domain','FINISHED')"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_account(email,sessionID,account_size,initial_date,conclusion_date)
+     values('example.com','${session}','1M','2024-01-01T12:00:00.000','2024-01-01T12:30:00.000')"
+  MOCK_LDAPADD_FAIL=0
+  run restore_main_domain "$session" ""
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"started"* ]]
+}
+
+@test "restore_main_domain: returns non-zero when ldapadd fails" {
+  SESSION_TYPE="TXT"
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  cat >> "${WORKDIR}/sessions.txt" << EOF
+SESSION: ${session} started on Mon Jan 01
+${session}:example.com:01/01/24
+EOF
+  MOCK_LDAPADD_FAIL=1
+  run restore_main_domain "$session" ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"errors"* ]]
 }
 
 @test "restore_main_ldap: runs restore for found SQLITE3 session" {

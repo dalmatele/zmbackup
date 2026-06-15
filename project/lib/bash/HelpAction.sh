@@ -7,9 +7,9 @@
 # show_help: It will show a quick help about each command from zmbackup
 ################################################################################
 function show_help (){
-  printf "usage: zmbackup -f [-m,-dl,-al,-ldp] [-d,-a] <mail/domain>"
+  printf "usage: zmbackup -f [-m,-dl,-al,-ldp,-dom] [-d,-a] <mail/domain>"
   printf "\n       zmbackup -i <mail>"
-  printf "\n       zmbackup -r [-m,-dl,-al,-ldp] [-d,-a] <session> <mail>"
+  printf "\n       zmbackup -r [-m,-dl,-al,-ldp,-dom] [-d,-a] <session> <mail>"
   printf "\n       zmbackup -r [-ro] <session> <mail_origin> <mail_destination>"
   printf "\n       zmbackup -d <session>"
   printf "\n       zmbackup -mg"
@@ -36,6 +36,7 @@ function show_help (){
   printf "\n -al,  --alias                    : Execute a backup of an alias instead of an account."
   printf "\n -ldp, --ldap                     : Execute a backup of an account, but only the ldap entry."
   printf "\n -sig, --signature                : Execute a backup of a signature."
+  printf "\n -dom, --domain-backup            : Execute a backup of all Zimbra domain configurations."
   printf "\n -d,   --domain                   : Execute a backup of only a set of domains, comma separated"
   printf "\n -a,   --account                  : Execute a backup of only a set of accounts, comma separated"
 
@@ -49,8 +50,9 @@ function show_help (){
   printf "\n -ldp, --ldap                     : Execute a restore of an account, but only the ldap entry."
   printf "\n -ro,  --restoreOnAccount         : Execute a restore of an account inside another account."
   printf "\n -sig, --signature                : Execute a restore of a signature."
-  printf "\n -d,   --domain                   : Execute a backup of only a set of domains, comma separated"
-  printf "\n -a,   --account                  : Execute a backup of only a set of accounts, comma separated"
+  printf "\n -dom, --domain-backup            : Execute a restore of domain configurations. Run before restoring accounts on a clean installation."
+  printf "\n -d,   --domain                   : Execute a restore of only a set of domains, comma separated"
+  printf "\n -a,   --account                  : Execute a restore of only a set of accounts, comma separated"
 
   printf "\n\n\n"
 }

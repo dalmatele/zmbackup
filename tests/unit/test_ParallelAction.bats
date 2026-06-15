@@ -15,6 +15,7 @@ setup() {
   export MOCK_ZMMAILBOX_EMPTY=0
   export MOCK_ZMMAILBOX_204=0
   export MOCK_LDAPADD_FAIL=0
+  export MOCK_LDAPADD_EXISTS=0
   export MOCK_LDAPDELETE_FAIL=0
 
   # Create a blockedlist in a place ldap_filter can find it
@@ -192,6 +193,70 @@ teardown() {
   run mailbox_restore "$session" "user@example.com"
   [ "$status" -eq 0 ]
   [[ "$output" == *"skipping"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# domain_backup
+# ---------------------------------------------------------------------------
+
+@test "domain_backup: success sets ERRCODE=0" {
+  MOCK_LDAPSEARCH_FAIL=0
+  domain_backup "example.com" "(objectclass=zimbraDomain)"
+  [ "$ERRCODE" -eq 0 ]
+}
+
+@test "domain_backup: success creates ldiff file named after domain" {
+  MOCK_LDAPSEARCH_FAIL=0
+  domain_backup "example.com" "(objectclass=zimbraDomain)"
+  [ -f "${TEMPDIR}/example.com.ldiff" ]
+}
+
+@test "domain_backup: failure sets ERRCODE=1" {
+  MOCK_LDAPSEARCH_FAIL=1 domain_backup "example.com" "(objectclass=zimbraDomain)"
+  [ "$ERRCODE" -eq 1 ]
+}
+
+# ---------------------------------------------------------------------------
+# domain_restore
+# ---------------------------------------------------------------------------
+
+@test "domain_restore: success returns 0" {
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  MOCK_LDAPADD_FAIL=0
+  run domain_restore "$session" "example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "domain_restore: returns 1 when ldiff has no DN line" {
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  echo "objectClass: dcObject" > "${WORKDIR}/${session}/example.com.ldiff"
+  run domain_restore "$session" "example.com"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Could not extract DN"* ]]
+}
+
+@test "domain_restore: returns 0 when domain already exists in LDAP" {
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  MOCK_LDAPADD_EXISTS=1
+  run domain_restore "$session" "example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "domain_restore: returns non-zero when ldapadd fails with unexpected error" {
+  local session="domain-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  printf "dn: dc=example,dc=com\nobjectClass: dcObject\nobjectClass: zimbraDomain\n" \
+    > "${WORKDIR}/${session}/example.com.ldiff"
+  MOCK_LDAPADD_FAIL=1
+  run domain_restore "$session" "example.com"
+  [ "$status" -ne 0 ]
 }
 
 # ---------------------------------------------------------------------------

@@ -97,6 +97,12 @@ setup() {
   [[ "$output" == *"--account"* ]]
 }
 
+@test "show_help: lists -dom / --domain-backup option" {
+  run show_help
+  [[ "$output" == *"-dom"* ]]
+  [[ "$output" == *"--domain-backup"* ]]
+}
+
 @test "show_help: lists Full Backup Options section" {
   run show_help
   [[ "$output" == *"Full Backup Options"* ]]
