@@ -61,10 +61,15 @@ function mailbox_backup()
       export ERRCODE=1
     fi
   else
-    zmlog local7.err "Zmbackup: Mailbox - Backup for account $1 failed. Error message below:"
-    echo "Zmbackup: $1 " | zmlog local7.err
-    zmlog local7.err < "$TEMP_CLI_OUTPUT"
-    export ERRCODE=1
+    if grep -q "status=204" "$TEMP_CLI_OUTPUT"; then
+      zmlog local7.info "Zmbackup: Mailbox - No new content for account $1 since last backup."
+      export ERRCODE=0
+    else
+      zmlog local7.err "Zmbackup: Mailbox - Backup for account $1 failed. Error message below:"
+      echo "Zmbackup: $1 " | zmlog local7.err
+      zmlog local7.err < "$TEMP_CLI_OUTPUT"
+      export ERRCODE=1
+    fi
   fi
   rm -rf "${TEMP_CLI_OUTPUT:?}"
 }

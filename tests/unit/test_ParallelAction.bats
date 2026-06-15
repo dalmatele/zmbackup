@@ -13,6 +13,7 @@ setup() {
   export MOCK_LDAPSEARCH_FAIL=0
   export MOCK_ZMMAILBOX_FAIL=0
   export MOCK_ZMMAILBOX_EMPTY=0
+  export MOCK_ZMMAILBOX_204=0
   export MOCK_LDAPADD_FAIL=0
   export MOCK_LDAPDELETE_FAIL=0
 
@@ -85,6 +86,19 @@ teardown() {
   MOCK_ZMMAILBOX_EMPTY=1 mailbox_backup "user@example.com"
   [ "$ERRCODE" -eq 1 ]
   [ ! -f "${TEMPDIR}/user@example.com.tgz" ]
+}
+
+@test "mailbox_backup: HTTP 204 No Content sets ERRCODE=0" {
+  INC="FALSE"
+  MOCK_ZMMAILBOX_204=1 mailbox_backup "user@example.com"
+  [ "$ERRCODE" -eq 0 ]
+}
+
+@test "mailbox_backup: HTTP 204 No Content logs at info level not error" {
+  INC="FALSE"
+  MOCK_ZMMAILBOX_204=1 mailbox_backup "user@example.com"
+  grep -q "\[local7.info\]" "${LOGFILE}"
+  ! grep -q "\[local7.err\]" "${LOGFILE}"
 }
 
 @test "mailbox_backup: incremental with TXT session reads date from sessions.txt" {
