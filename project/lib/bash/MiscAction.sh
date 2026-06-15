@@ -244,10 +244,30 @@ function validate_config(){
     zmlog local7.warn "No value was found for SSL_ENABLE. Setting 'true' for the value."
   fi
 
+  check_parallel_version
+
   if [ "$ERR" == "true" ]; then
     echo "Some errors are found inside the config file. Please fix then and try again later."
     zmlog local7.err "Zmbackup: Configuration validation failed — check the errors above."
     exit 3
+  fi
+}
+
+################################################################################
+# check_parallel_version: Warn if GNU Parallel is too old (version <= 20160222
+# has a known "pidtable format" bug that causes backup failures).
+################################################################################
+function check_parallel_version(){
+  local parallel_version
+  parallel_version=$(parallel --version 2>/dev/null | head -1 | grep -oE '[0-9]{8}')
+  if [[ -n "$parallel_version" ]] && [[ "$parallel_version" -le "20160222" ]]; then
+    echo "WARNING: GNU Parallel version $parallel_version has a known bug (pidtable format)"
+    echo "         that may cause backup failures. Please upgrade to a version newer than"
+    echo "         20160222. On RHEL/CentOS 7 you can run:"
+    echo "           wget -O /etc/yum.repos.d/tange.repo \\"
+    echo "             http://download.opensuse.org/repositories/home:/tange/CentOS_7/home:tange.repo"
+    echo "           yum install -y parallel"
+    zmlog local7.warn "Zmbackup: GNU Parallel $parallel_version has a known pidtable bug — please upgrade."
   fi
 }
 
