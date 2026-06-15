@@ -36,6 +36,7 @@ SESSION_TYPE="TXT"                                                              
 
 # REPOSITORIES FOR PACKAGES
 OLE_TANGE="http://download.opensuse.org/repositories/home:/tange/CentOS_CentOS-6/home:tange.repo"
+OLE_TANGE_RHEL7="http://download.opensuse.org/repositories/home:/tange/CentOS_7/home:tange.repo"
 
 # Force a terminal type - Issue #90
 export TERM="linux"

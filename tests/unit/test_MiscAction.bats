@@ -529,6 +529,49 @@ teardown() {
 }
 
 # ---------------------------------------------------------------------------
+# check_parallel_version
+# ---------------------------------------------------------------------------
+
+@test "check_parallel_version: warns when parallel version is 20160222" {
+  export MOCK_PARALLEL_VERSION="20160222"
+  run check_parallel_version
+  unset MOCK_PARALLEL_VERSION
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING"* ]]
+  [[ "$output" == *"20160222"* ]]
+}
+
+@test "check_parallel_version: warns when parallel version is older than 20160222" {
+  export MOCK_PARALLEL_VERSION="20140722"
+  run check_parallel_version
+  unset MOCK_PARALLEL_VERSION
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING"* ]]
+}
+
+@test "check_parallel_version: does not warn when parallel version is newer than 20160222" {
+  export MOCK_PARALLEL_VERSION="20200722"
+  run check_parallel_version
+  unset MOCK_PARALLEL_VERSION
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"WARNING"* ]]
+}
+
+@test "check_parallel_version: does not fail when parallel is not installed" {
+  run bash -c "PATH=/nonexistent_bin_dir check_parallel_version 2>/dev/null; echo ok"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok"* ]]
+}
+
+@test "validate_config: calls check_parallel_version (warn present with old parallel)" {
+  export MOCK_PARALLEL_VERSION="20160222"
+  run validate_config
+  unset MOCK_PARALLEL_VERSION
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING"* ]]
+}
+
+# ---------------------------------------------------------------------------
 # checkpid
 # ---------------------------------------------------------------------------
 

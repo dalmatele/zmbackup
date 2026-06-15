@@ -1,5 +1,10 @@
 #!/bin/bash
 # parallel mock - sequential execution
+if [[ "$1" == "--version" ]]; then
+  echo "GNU parallel ${MOCK_PARALLEL_VERSION:-20200722}"
+  exit 0
+fi
+
 # Skip flags
 while [[ $# -gt 1 ]]; do
   case "$1" in

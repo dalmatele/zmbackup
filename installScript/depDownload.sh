@@ -26,10 +26,15 @@ function install_ubuntu() {
 ################################################################################
 function install_redhat() {
   echo "Installing dependencies. Please wait..."
-  grep 6 /etc/redhat-release > /dev/null 2>&1
-  BASHERRCODE=$?
-  if [[ $BASHERRCODE -eq 0 ]]; then
+  if grep -E "release 6" /etc/redhat-release > /dev/null 2>&1; then
     wget -O "/etc/yum.repos.d/tange.repo" "$OLE_TANGE" > /dev/null 2>&1
+    BASHERRCODE=$?
+    if [[ $BASHERRCODE -ne 0 ]]; then
+      echo "Failure - Can't install Tange's repository for Parallel"
+      exit "$ERR_NO_CONNECTION"
+    fi
+  elif grep -E "release 7" /etc/redhat-release > /dev/null 2>&1; then
+    wget -O "/etc/yum.repos.d/tange.repo" "$OLE_TANGE_RHEL7" > /dev/null 2>&1
     BASHERRCODE=$?
     if [[ $BASHERRCODE -ne 0 ]]; then
       echo "Failure - Can't install Tange's repository for Parallel"
