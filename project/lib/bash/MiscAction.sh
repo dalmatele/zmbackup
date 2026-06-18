@@ -84,6 +84,8 @@ function load_config(){
   local ldaprc="${ZIMBRA_LDAPRC:-/opt/zimbra/.ldaprc}"
   if [ -f "$conf" ]; then
     source "$conf" 2> /dev/null
+    ZMBACKUP_BLOCKEDLIST="${ZMBACKUP_BLOCKEDLIST:-/etc/zmbackup/blockedlist.conf}"
+    export ZMBACKUP_BLOCKEDLIST
   else
     zmlog local7.err "Zmbackup: zmbackup.conf not found."
     echo "ERROR - zmbackup.conf not found. Can't proceed without the file."
