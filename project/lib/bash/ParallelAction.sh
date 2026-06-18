@@ -41,15 +41,11 @@ function mailbox_backup()
 {
   TEMP_CLI_OUTPUT=$(mktemp)
   if [[ "$INC" == "TRUE" ]]; then
-    if [[ $SESSION_TYPE == 'TXT' ]]; then
-      DATE=$(grep "$1" "$WORKDIR"/sessions.txt | tail -1 | awk -F: '{print $3}' | cut -d'-' -f2)
-    elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
-      local SAFE_EMAIL
-      SAFE_EMAIL=$(safe_sql_value "$1")
-      DATE=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select MAX(initial_date) \
-             from backup_account where email='${SAFE_EMAIL}' and \
-             (sessionID like 'full%' or sessionID like 'inc%' or sessionID like 'mbox%')")
-    fi
+    local SAFE_EMAIL
+    SAFE_EMAIL=$(safe_sql_value "$1")
+    DATE=$(session_query \
+      "select MAX(initial_date) from backup_account where email='${SAFE_EMAIL}' and (sessionID like 'full%' or sessionID like 'inc%' or sessionID like 'mbox%')" \
+      "grep \"$1\" \"$WORKDIR\"/sessions.txt | tail -1 | awk -F: '{print \$3}' | cut -d- -f2")
     YESTERDAY=$(date -d "$DATE" --date='-48 hours' +%m/%d/%Y)
     AFTER='&'"query=after:\"$YESTERDAY\""
   fi
@@ -198,15 +194,13 @@ function ldap_filter()
 {
   EXIST=
   if [[ "$LOCK_BACKUP" == "true" ]]; then
-    if [[ "$SESSION_TYPE" == "TXT" ]]; then
-      EXIST=$(grep "$1:$(date +%m/%d/%y)" "$WORKDIR"/sessions.txt 2> /dev/null | tail -1)
-    else
-      TODAY=$(date +%Y-%m-%dT%H:%M:%S.%N)
-      YESTERDAY=$(date +%Y-%m-%dT%H:%M:%S.%N -d "yesterday")
-      local SAFE_EMAIL
-      SAFE_EMAIL=$(safe_sql_value "$1")
-      EXIST=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where conclusion_date < '$TODAY' and conclusion_date > '$YESTERDAY' and email='${SAFE_EMAIL}'")
-    fi
+    TODAY=$(date +%Y-%m-%dT%H:%M:%S.%N)
+    YESTERDAY=$(date +%Y-%m-%dT%H:%M:%S.%N -d "yesterday")
+    local SAFE_EMAIL
+    SAFE_EMAIL=$(safe_sql_value "$1")
+    EXIST=$(session_query \
+      "select email from backup_account where conclusion_date < '$TODAY' and conclusion_date > '$YESTERDAY' and email='${SAFE_EMAIL}'" \
+      "grep \"$1:$(date +%m/%d/%y)\" \"$WORKDIR\"/sessions.txt 2>/dev/null | tail -1")
   fi
   local blockedlist="${ZMBACKUP_BLOCKEDLIST:-/etc/zmbackup/blockedlist.conf}"
   if grep -Fxq "$1" "$blockedlist"; then
