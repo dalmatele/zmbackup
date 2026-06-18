@@ -289,3 +289,62 @@ teardown() {
   backup_main "$ACOBJECT" "$ACFILTER" "-a" "user@example.com"
   grep -q "SESSION" "${WORKDIR}/sessions.txt"
 }
+
+# ---------------------------------------------------------------------------
+# SQL injection regression tests
+# ---------------------------------------------------------------------------
+
+@test "__backupFullInc: SQL injection in email is escaped in TEMPSQL" {
+  SESSION="full-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  MOCK_LDAPSEARCH_FAIL=0
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  __backupFullInc "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
+  # Single quote must be doubled so the DELETE is not a separate statement
+  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
+}
+
+@test "__backupFullInc: SQL injection payload does not corrupt the database" {
+  SESSION="full-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session(sessionID,initial_date,type,status) \
+     values('full-20240101120000','2024-01-01T00:00:00.000','Full Backup','IN PROGRESS')"
+  MOCK_LDAPSEARCH_FAIL=0
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  __backupFullInc "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "$TEMPSQL" > /dev/null 2>&1
+  # Session row inserted by setup must still exist
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
+}
+
+@test "__backupLdap: SQL injection in email is escaped in TEMPSQL" {
+  SESSION="alias-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  MOCK_LDAPSEARCH_FAIL=0
+  __backupLdap "'; DELETE FROM backup_session; --@evil.com" "(objectclass=zimbraAlias)"
+  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
+}
+
+@test "__backupDomain: SQL injection in domain name is escaped in TEMPSQL" {
+  SESSION="domain-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  MOCK_LDAPSEARCH_FAIL=0
+  __backupDomain "evil'.com" "(objectclass=zimbraDomain)"
+  grep -q "evil''.com" "$TEMPSQL"
+}
+
+@test "__backupMailbox: SQL injection in email is escaped in TEMPSQL" {
+  SESSION="mbox-20240101120000"
+  SESSION_TYPE="SQLITE3"
+  INC="FALSE"
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  __backupMailbox "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
+  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
+}

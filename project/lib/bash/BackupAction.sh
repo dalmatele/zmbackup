@@ -21,8 +21,10 @@ function __backupFullInc(){
       elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
         EDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
         SIZE=$(du -ch "$TEMPDIR"/"$1"* | grep total | cut -f1)
+        local SAFE_EMAIL
+        SAFE_EMAIL=$(safe_sql_value "$1")
         echo "insert into backup_account (email,sessionID,account_size, initial_date, \
-              conclusion_date) values ('$1','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
+              conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
       fi
     fi
   fi
@@ -47,8 +49,10 @@ function __backupLdap(){
     elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
       EDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
       SIZE=$(du -ch "$TEMPDIR"/"$1"* | grep total | cut -f1)
+      local SAFE_EMAIL
+      SAFE_EMAIL=$(safe_sql_value "$1")
       echo "insert into backup_account (email,sessionID,account_size, initial_date, \
-            conclusion_date) values ('$1','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
+            conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
     fi
   fi
 }
@@ -68,8 +72,10 @@ function __backupDomain(){
     elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
       EDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
       SIZE=$(du -ch "$TEMPDIR"/"$1"* | grep total | cut -f1)
+      local SAFE_EMAIL
+      SAFE_EMAIL=$(safe_sql_value "$1")
       echo "insert into backup_account (email,sessionID,account_size, initial_date, \
-            conclusion_date) values ('$1','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
+            conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
     fi
   fi
 }
@@ -90,8 +96,10 @@ function __backupMailbox(){
     elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
       EDATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
       SIZE=$(du -ch "$TEMPDIR"/"$1"* | grep total | cut -f1)
+      local SAFE_EMAIL
+      SAFE_EMAIL=$(safe_sql_value "$1")
       echo "insert into backup_account (email,sessionID,account_size, initial_date, \
-            conclusion_date) values ('$1','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
+            conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');"  >> "$TEMPSQL"
     fi
   fi
 }

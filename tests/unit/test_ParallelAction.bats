@@ -391,3 +391,46 @@ teardown() {
   run ldap_filter "user@example.com"
   [[ "$output" == *"already has backup today"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# SQL injection regression tests
+# ---------------------------------------------------------------------------
+
+@test "ldap_filter: SQL injection in email does not corrupt database (SQLITE3 mode)" {
+  LOCK_BACKUP="true"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  local now
+  now="$(date +%Y-%m-%dT%H:%M:%S.%N)"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('full-20240101','2024-01-01T00:00:00.000',
+     '${now}','100M','Full Backup','FINISHED')"
+  grep() {
+    if [[ "$*" == *"blockedlist.conf"* ]]; then return 1; fi
+    command grep "$@"
+  }
+  # Without the fix this payload would delete all rows from backup_account
+  ldap_filter "'; DELETE FROM backup_session; --@evil.com"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
+}
+
+@test "mailbox_backup: SQL injection in email does not corrupt database (incremental SQLITE3 mode)" {
+  INC="TRUE"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('full-20240101120000','2024-01-01T12:00:00.000',
+     '2024-01-01T12:30:00.000','100M','Full Backup','FINISHED')"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_account(email,sessionID,account_size,initial_date,conclusion_date)
+     values('user@example.com','full-20240101120000','50M','2024-01-01T12:00:00.000','2024-01-01T12:30:00.000')"
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  # Injection payload as email — without the fix the SELECT could be manipulated
+  mailbox_backup "'; DELETE FROM backup_session; --@evil.com"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
+}

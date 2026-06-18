@@ -709,3 +709,49 @@ teardown() {
   [ "$status" -eq 0 ]
   [ -n "$output" ]
 }
+
+# ---------------------------------------------------------------------------
+# safe_sql_value
+# ---------------------------------------------------------------------------
+
+@test "safe_sql_value: passes a plain string through unchanged" {
+  result=$(safe_sql_value "user@example.com")
+  [ "$result" = "user@example.com" ]
+}
+
+@test "safe_sql_value: doubles a single quote" {
+  result=$(safe_sql_value "o'reilly@example.com")
+  [ "$result" = "o''reilly@example.com" ]
+}
+
+@test "safe_sql_value: doubles multiple single quotes" {
+  result=$(safe_sql_value "it's a 'test'")
+  [ "$result" = "it''s a ''test''" ]
+}
+
+@test "safe_sql_value: neutralises a classic SQL injection payload" {
+  result=$(safe_sql_value "'; DROP TABLE backup_session; --")
+  [ "$result" = "''; DROP TABLE backup_session; --" ]
+}
+
+@test "safe_sql_value: result is safe to use in a real SQLite3 query" {
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  local payload safe_val
+  payload="'; DELETE FROM backup_session; --@example.com"
+  safe_val=$(safe_sql_value "$payload")
+  # This must not error and must not delete any rows
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session(sessionID,initial_date,type,status) \
+     values ('${safe_val}','2024-01-01T00:00:00.000','Full Backup','FINISHED')"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
+}
+
+@test "export_function: exports safe_sql_value" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F safe_sql_value'
+  [ "$status" -eq 0 ]
+}

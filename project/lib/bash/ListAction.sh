@@ -68,7 +68,9 @@ function build_listRST()
     if [[ $SESSION_TYPE == 'TXT' ]]; then
       grep "$1:" "$WORKDIR"/sessions.txt | grep -v "SESSION" | cut -d: -f2 > "$TEMPACCOUNT"
     elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
-      sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where sessionID='$1'" > "$TEMPACCOUNT"
+      local SAFE_SESSION
+      SAFE_SESSION=$(safe_sql_value "$1")
+      sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where sessionID='${SAFE_SESSION}'" > "$TEMPACCOUNT"
     fi
   fi
 }

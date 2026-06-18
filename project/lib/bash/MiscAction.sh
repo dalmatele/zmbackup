@@ -22,6 +22,14 @@ function zmlog(){
 }
 
 ################################################################################
+# safe_sql_value: Escape a value for safe interpolation into a SQLite3 string
+# by doubling single-quote characters, preventing SQL injection.
+################################################################################
+function safe_sql_value() {
+  printf '%s' "$1" | sed "s/'/''/g"
+}
+
+################################################################################
 # clear_temp: Clear all the temporary files.
 ################################################################################
 function on_exit(){
@@ -302,6 +310,7 @@ function checkpid(){
 ################################################################################
 function export_function(){
   export -f zmlog
+  export -f safe_sql_value
   export -f __backupMailbox
   export -f __backupFullInc
   export -f __backupLdap

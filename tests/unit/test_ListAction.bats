@@ -106,3 +106,27 @@ EOF
   build_listRST "$session" ""
   grep -q "user@example.com" "$TEMPACCOUNT"
 }
+
+# ---------------------------------------------------------------------------
+# SQL injection regression tests
+# ---------------------------------------------------------------------------
+
+@test "build_listRST: SQL injection in session ID does not corrupt database" {
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  local session="full-20240101120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('${session}','2024-01-01T12:00:00.000',
+     '2024-01-01T12:30:00.000','100M','Full Backup','FINISHED')"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_account(email,sessionID,account_size,initial_date,conclusion_date)
+     values('user@example.com','${session}','50M','2024-01-01T12:00:00.000','2024-01-01T12:30:00.000')"
+  # Injection payload as session ID — without the fix this would wipe backup_account
+  build_listRST "' OR '1'='1'; DELETE FROM backup_account; --" ""
+  # Table must still have its one row
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_account")
+  [ "$count" -eq 1 ]
+  # And TEMPACCOUNT must be empty (no false positive match)
+  [ ! -s "$TEMPACCOUNT" ]
+}
