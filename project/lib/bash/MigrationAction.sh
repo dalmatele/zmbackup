@@ -25,49 +25,15 @@ function importsessionSQL(){
   for i in $(grep -E 'SESSION:' "$WORKDIR"/sessions.txt | grep 'started' |  awk '{print $2}' | sort | uniq); do
     SESSIONID=$i
     OPT=$(echo "$i" | cut -d"-" -f1 )
+    parse_session_name "$i"
     case $OPT in
-      "full")
-          OPT="Full Backup"
-          YEAR=$(echo "$i" | cut -c6-9)
-          MONTH=$(echo "$i" | cut -c10-11)
-          DAY=$(echo "$i" | cut -c12-13)
-      ;;
-      "inc")
-          OPT="Incremental Backup"
-          YEAR=$(echo "$i" | cut -c5-8)
-          MONTH=$(echo "$i" | cut -c9-10)
-          DAY=$(echo "$i" | cut -c11-12)
-      ;;
-      "distlist")
-          OPT="Distribution List Backup"
-          YEAR=$(echo "$i" | cut -c10-13)
-          MONTH=$(echo "$i" | cut -c14-15)
-          DAY=$(echo "$i" | cut -c16-17)
-      ;;
-      "alias")
-          OPT="Alias Backup"
-          YEAR=$(echo "$i" | cut -c7-10)
-          MONTH=$(echo "$i" | cut -c11-12)
-          DAY=$(echo "$i" | cut -c13-14)
-      ;;
-      "ldap")
-          OPT="Account Backup - Only LDAP"
-          YEAR=$(echo "$i" | cut -c6-9)
-          MONTH=$(echo "$i" | cut -c10-11)
-          DAY=$(echo "$i" | cut -c12-13)
-      ;;
-      "mbox")
-          OPT="Mailbox Backup"
-          YEAR=$(echo "$i" | cut -c6-9)
-          MONTH=$(echo "$i" | cut -c10-11)
-          DAY=$(echo "$i" | cut -c12-13)
-      ;;
-      "signature")
-          OPT="Signature Backup"
-          YEAR=$(echo "$i" | cut -c11-14)
-          MONTH=$(echo "$i" | cut -c15-16)
-          DAY=$(echo "$i" | cut -c17-18)
-      ;;
+      "full")      OPT="Full Backup" ;;
+      "inc")       OPT="Incremental Backup" ;;
+      "distlist")  OPT="Distribution List Backup" ;;
+      "alias")     OPT="Alias Backup" ;;
+      "ldap")      OPT="Account Backup - Only LDAP" ;;
+      "mbox")      OPT="Mailbox Backup" ;;
+      "signature") OPT="Signature Backup" ;;
     esac
     INITIAL=$YEAR'-'$MONTH'-'$DAY"T00:00:00.000"
     CONCLUSION=$YEAR'-'$MONTH'-'$DAY"T00:00:00.000"
