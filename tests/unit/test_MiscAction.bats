@@ -755,3 +755,51 @@ teardown() {
   run bash -c 'declare -F safe_sql_value'
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# ldap_escape_filter
+# ---------------------------------------------------------------------------
+
+@test "ldap_escape_filter: passes a plain email through unchanged" {
+  result=$(ldap_escape_filter "user@example.com")
+  [ "$result" = "user@example.com" ]
+}
+
+@test "ldap_escape_filter: escapes backslash to \\5c" {
+  result=$(ldap_escape_filter 'user\admin@example.com')
+  [ "$result" = 'user\5cadmin@example.com' ]
+}
+
+@test "ldap_escape_filter: escapes asterisk to \\2a" {
+  result=$(ldap_escape_filter 'user*@example.com')
+  [ "$result" = 'user\2a@example.com' ]
+}
+
+@test "ldap_escape_filter: escapes left parenthesis to \\28" {
+  result=$(ldap_escape_filter 'user(@example.com')
+  [ "$result" = 'user\28@example.com' ]
+}
+
+@test "ldap_escape_filter: escapes right parenthesis to \\29" {
+  result=$(ldap_escape_filter 'user)@example.com')
+  [ "$result" = 'user\29@example.com' ]
+}
+
+@test "ldap_escape_filter: escapes all RFC 4515 special characters in one value" {
+  result=$(ldap_escape_filter 'evil*()\test')
+  [ "$result" = 'evil\2a\28\29\5ctest' ]
+}
+
+@test "ldap_escape_filter: backslash is escaped before other characters to avoid double-escaping" {
+  # A backslash followed by an asterisk: \* should become \5c\2a, not \\2a
+  result=$(ldap_escape_filter '\*')
+  [ "$result" = '\5c\2a' ]
+}
+
+@test "export_function: exports ldap_escape_filter" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F ldap_escape_filter'
+  [ "$status" -eq 0 ]
+}

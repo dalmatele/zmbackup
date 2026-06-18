@@ -16,8 +16,10 @@
 function ldap_backup()
 {
   TEMP_CLI_OUTPUT=$(mktemp)
+  local SAFE_ACCOUNT
+  SAFE_ACCOUNT=$(ldap_escape_filter "$1")
   if ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' \
-             -LLL "(&(|(mail=$1)(uid=$1))$2)" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"; then
+             -LLL "(&(|(mail=${SAFE_ACCOUNT})(uid=${SAFE_ACCOUNT}))$2)" > "$TEMPDIR"/"$1".ldiff 2> "$TEMP_CLI_OUTPUT"; then
     zmlog local7.info "Zmbackup: LDAP - Backup for account $1 finished."
     export ERRCODE=0
   else

@@ -30,6 +30,18 @@ function safe_sql_value() {
 }
 
 ################################################################################
+# ldap_escape_filter: Escape a value for safe embedding in an LDAP filter
+# string per RFC 4515. Replaces \, *, (, ) with their \XX hex equivalents.
+################################################################################
+function ldap_escape_filter() {
+  printf '%s' "$1" | sed \
+    -e 's/\\/\\5c/g' \
+    -e 's/\*/\\2a/g' \
+    -e 's/(/\\28/g' \
+    -e 's/)/\\29/g'
+}
+
+################################################################################
 # clear_temp: Clear all the temporary files.
 ################################################################################
 function on_exit(){
@@ -311,6 +323,7 @@ function checkpid(){
 function export_function(){
   export -f zmlog
   export -f safe_sql_value
+  export -f ldap_escape_filter
   export -f __backupMailbox
   export -f __backupFullInc
   export -f __backupLdap

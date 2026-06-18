@@ -396,6 +396,70 @@ teardown() {
 # SQL injection regression tests
 # ---------------------------------------------------------------------------
 
+@test "ldap_backup: asterisk in account name is escaped in LDAP filter" {
+  ldapsearch() {
+    local args=("$@")
+    local i
+    for ((i=0; i<${#args[@]}; i++)); do
+      if [[ "${args[$i]}" == "-LLL" ]] && (( i+1 < ${#args[@]} )); then
+        printf '%s' "${args[$((i+1))]}" > "${WORKDIR}/captured_filter.txt"
+        break
+      fi
+    done
+    return 0
+  }
+  export -f ldapsearch
+  ldap_backup "user*@example.com" "(objectclass=zimbraAccount)"
+  local filter
+  filter=$(cat "${WORKDIR}/captured_filter.txt" 2>/dev/null || echo "")
+  # Raw asterisk must not appear inside the mail= or uid= values
+  [[ "$filter" != *'mail=user*@'* ]]
+  [[ "$filter" == *'mail=user\2a@'* ]]
+}
+
+@test "ldap_backup: parentheses in account name are escaped in LDAP filter" {
+  ldapsearch() {
+    local args=("$@")
+    local i
+    for ((i=0; i<${#args[@]}; i++)); do
+      if [[ "${args[$i]}" == "-LLL" ]] && (( i+1 < ${#args[@]} )); then
+        printf '%s' "${args[$((i+1))]}" > "${WORKDIR}/captured_filter.txt"
+        break
+      fi
+    done
+    return 0
+  }
+  export -f ldapsearch
+  ldap_backup "evil(admin)@example.com" "(objectclass=zimbraAccount)"
+  local filter
+  filter=$(cat "${WORKDIR}/captured_filter.txt" 2>/dev/null || echo "")
+  [[ "$filter" != *'mail=evil(admin)'* ]]
+  [[ "$filter" == *'mail=evil\28admin\29@'* ]]
+}
+
+@test "ldap_backup: backslash in account name is escaped in LDAP filter" {
+  ldapsearch() {
+    local args=("$@")
+    local i
+    for ((i=0; i<${#args[@]}; i++)); do
+      if [[ "${args[$i]}" == "-LLL" ]] && (( i+1 < ${#args[@]} )); then
+        printf '%s' "${args[$((i+1))]}" > "${WORKDIR}/captured_filter.txt"
+        break
+      fi
+    done
+    return 0
+  }
+  export -f ldapsearch
+  ldap_backup 'user\admin@example.com' "(objectclass=zimbraAccount)"
+  local filter
+  filter=$(cat "${WORKDIR}/captured_filter.txt" 2>/dev/null || echo "")
+  [[ "$filter" == *'mail=user\5cadmin@'* ]]
+}
+
+# ---------------------------------------------------------------------------
+# SQL injection regression tests
+# ---------------------------------------------------------------------------
+
 @test "ldap_filter: SQL injection in email does not corrupt database (SQLITE3 mode)" {
   LOCK_BACKUP="true"
   SESSION_TYPE="SQLITE3"
