@@ -4,6 +4,19 @@
 ################################################################################
 
 ################################################################################
+# parse_session_name: Extract YEAR, MONTH, DAY from a session name.
+# The session name format is {prefix}-YYYYMMDDHHMMSS regardless of prefix length.
+# Sets YEAR, MONTH, DAY in the caller's scope; returns 1 if the name is invalid.
+################################################################################
+function parse_session_name() {
+  local name="$1"
+  [[ "$name" =~ -([0-9]{4})([0-9]{2})([0-9]{2}) ]] || return 1
+  YEAR="${BASH_REMATCH[1]}"
+  MONTH="${BASH_REMATCH[2]}"
+  DAY="${BASH_REMATCH[3]}"
+}
+
+################################################################################
 # zmlog: Write a log entry to both syslog and $LOGFILE.
 # Options:
 #    $1 - syslog priority (e.g. local7.info, local7.err, local7.warn)
@@ -323,6 +336,7 @@ function checkpid(){
 # export_function: Export all the functions used by ParallelAction
 ################################################################################
 function export_function(){
+  export -f parse_session_name
   export -f zmlog
   export -f safe_sql_value
   export -f ldap_escape_filter
