@@ -59,6 +59,7 @@ function deploy_new() {
   install -o "$OSE_USER" -m 700 "$MYDIR"/project/zmbackup "$ZMBKP_SRC"
   echo -ne '#####                 (25%)\r'
   cp -R "$MYDIR"/project/lib/* "$ZMBKP_LIB"
+  install -o "$OSE_USER" -m 644 "$MYDIR"/VERSION "$ZMBKP_LIB"/VERSION
   chown -R "$OSE_USER". "$ZMBKP_LIB"
   chmod -R 700 "$ZMBKP_LIB"
   echo -ne '######                (30%)\r'
@@ -124,6 +125,7 @@ function deploy_upgrade(){
   echo -ne '###############       (75%)\r'
   test -d "$ZMBKP_LIB" || mkdir -p "$ZMBKP_LIB"
   cp -R "$MYDIR"/project/lib/* "$ZMBKP_LIB"
+  install -o "$OSE_USER" -m 644 "$MYDIR"/VERSION "$ZMBKP_LIB"/VERSION
   chown -R "$OSE_USER". "$ZMBKP_LIB"
   chmod -R 700 "$ZMBKP_LIB"
   echo -ne '####################  (100%)\r'
