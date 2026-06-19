@@ -28,6 +28,7 @@ setup() {
 
   # Export functions required by the parallel mock subprocess
   export -f __backupFullInc __backupLdap __backupMailbox __backupDomain ldap_backup mailbox_backup domain_backup
+  export -f zmlog safe_sql_value ldap_escape_filter session_query
 
   # Suppress blockedlist lookup in ldap_filter
   grep() {
@@ -65,8 +66,12 @@ teardown() {
   MOCK_LDAPSEARCH_FAIL=0
   MOCK_ZMMAILBOX_FAIL=0
   MOCK_ZMMAILBOX_EMPTY=0
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   __backupFullInc "user@example.com" "$ACOBJECT"
-  grep -q "insert into backup_account" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_account where email='user@example.com'")
+  [ "$count" -eq 1 ]
 }
 
 @test "__backupFullInc: does not write record when ldap_backup fails" {
@@ -104,8 +109,12 @@ teardown() {
   SESSION="alias-20240101120000"
   SESSION_TYPE="SQLITE3"
   MOCK_LDAPSEARCH_FAIL=0
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   __backupLdap "alias@example.com" "(objectclass=zimbraAlias)"
-  grep -q "insert into backup_account" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_account where email='alias@example.com'")
+  [ "$count" -eq 1 ]
 }
 
 @test "__backupLdap: does not write record when ldap_backup fails" {
@@ -133,8 +142,12 @@ teardown() {
   SESSION="domain-20240101120000"
   SESSION_TYPE="SQLITE3"
   MOCK_LDAPSEARCH_FAIL=0
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   __backupDomain "example.com" "(objectclass=zimbraDomain)"
-  grep -q "insert into backup_account" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_account where email='example.com'")
+  [ "$count" -eq 1 ]
 }
 
 @test "__backupDomain: does not write record when domain_backup fails" {
@@ -166,8 +179,12 @@ teardown() {
   INC="FALSE"
   MOCK_ZMMAILBOX_FAIL=0
   MOCK_ZMMAILBOX_EMPTY=0
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
   __backupMailbox "user@example.com" "$ACOBJECT"
-  grep -q "insert into backup_account" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_account where email='user@example.com'")
+  [ "$count" -eq 1 ]
 }
 
 @test "__backupMailbox: does not write record when mailbox_backup fails" {
@@ -294,18 +311,7 @@ teardown() {
 # SQL injection regression tests
 # ---------------------------------------------------------------------------
 
-@test "__backupFullInc: SQL injection in email is escaped in TEMPSQL" {
-  SESSION="full-20240101120000"
-  SESSION_TYPE="SQLITE3"
-  MOCK_LDAPSEARCH_FAIL=0
-  MOCK_ZMMAILBOX_FAIL=0
-  MOCK_ZMMAILBOX_EMPTY=0
-  __backupFullInc "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
-  # Single quote must be doubled so the DELETE is not a separate statement
-  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
-}
-
-@test "__backupFullInc: SQL injection payload does not corrupt the database" {
+@test "__backupFullInc: SQL injection in email does not corrupt the database" {
   SESSION="full-20240101120000"
   SESSION_TYPE="SQLITE3"
   sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
@@ -316,35 +322,52 @@ teardown() {
   MOCK_ZMMAILBOX_FAIL=0
   MOCK_ZMMAILBOX_EMPTY=0
   __backupFullInc "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
-  sqlite3 "${WORKDIR}/sessions.sqlite3" < "$TEMPSQL" > /dev/null 2>&1
-  # Session row inserted by setup must still exist
+  # Session row must still exist — the injection must not have executed the DELETE
   local count
   count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
   [ "$count" -eq 1 ]
 }
 
-@test "__backupLdap: SQL injection in email is escaped in TEMPSQL" {
+@test "__backupLdap: SQL injection in email does not corrupt the database" {
   SESSION="alias-20240101120000"
   SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session(sessionID,initial_date,type,status) \
+     values('alias-20240101120000','2024-01-01T00:00:00.000','Alias','IN PROGRESS')"
   MOCK_LDAPSEARCH_FAIL=0
   __backupLdap "'; DELETE FROM backup_session; --@evil.com" "(objectclass=zimbraAlias)"
-  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
 }
 
-@test "__backupDomain: SQL injection in domain name is escaped in TEMPSQL" {
+@test "__backupDomain: SQL injection in domain name does not corrupt the database" {
   SESSION="domain-20240101120000"
   SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session(sessionID,initial_date,type,status) \
+     values('domain-20240101120000','2024-01-01T00:00:00.000','Domain','IN PROGRESS')"
   MOCK_LDAPSEARCH_FAIL=0
   __backupDomain "evil'.com" "(objectclass=zimbraDomain)"
-  grep -q "evil''.com" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
 }
 
-@test "__backupMailbox: SQL injection in email is escaped in TEMPSQL" {
+@test "__backupMailbox: SQL injection in email does not corrupt the database" {
   SESSION="mbox-20240101120000"
   SESSION_TYPE="SQLITE3"
   INC="FALSE"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session(sessionID,initial_date,type,status) \
+     values('mbox-20240101120000','2024-01-01T00:00:00.000','Mailbox','IN PROGRESS')"
   MOCK_ZMMAILBOX_FAIL=0
   MOCK_ZMMAILBOX_EMPTY=0
   __backupMailbox "'; DELETE FROM backup_session; --@evil.com" "$ACOBJECT"
-  grep -q "''; DELETE FROM backup_session; --@evil.com'" "$TEMPSQL"
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
+  [ "$count" -eq 1 ]
 }

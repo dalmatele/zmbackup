@@ -12,12 +12,9 @@
 ################################################################################
 function restore_main_mailbox()
 {
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    SESSION=$(grep -E ": $1 started" "$WORKDIR"/sessions.txt | grep 'started' | \
-                  awk '{print $2}' | sort | uniq)
-  elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
-    SESSION=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select * from backup_session where sessionID='$1'")
-  fi
+  SESSION=$(session_query \
+    "select * from backup_session where sessionID='$1'" \
+    "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     printf "Restore mail process with session %s started at %s" "$1" "$(date)"
     TOTAL_COUNT=0
@@ -80,12 +77,9 @@ function restore_main_mailbox()
 ################################################################################
 function restore_main_domain()
 {
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    SESSION=$(grep -E ": $1 started" "$WORKDIR"/sessions.txt | grep 'started' | \
-                  awk '{print $2}' | sort | uniq)
-  elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
-    SESSION=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select * from backup_session where sessionID='$1'")
-  fi
+  SESSION=$(session_query \
+    "select * from backup_session where sessionID='$1'" \
+    "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     echo "Restore Domain LDAP process with session $1 started at $(date)"
     if [[ -n "$2" ]]; then
@@ -117,12 +111,9 @@ function restore_main_domain()
 ################################################################################
 function restore_main_ldap()
 {
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    SESSION=$(grep -E ": $1 started" "$WORKDIR"/sessions.txt | grep 'started' | \
-                  awk '{print $2}' | sort | uniq)
-  elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
-    SESSION=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select * from backup_session where sessionID='$1'")
-  fi
+  SESSION=$(session_query \
+    "select * from backup_session where sessionID='$1'" \
+    "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     echo "Restore LDAP process with session $1 started at $(date)"
     LDAP_FAILFILE=$(mktemp)

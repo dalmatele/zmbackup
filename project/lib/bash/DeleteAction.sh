@@ -10,11 +10,9 @@
 ################################################################################
 function delete_one(){
   local RETCODE=0
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    SESSION=$(grep "$1 started" "$WORKDIR"/sessions.txt -m 1 | awk '{print $2}')
-  elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
-    SESSION=$(sqlite3 "$WORKDIR"/sessions.sqlite3 "select sessionID from backup_session where sessionID='$1'")
-  fi
+  SESSION=$(session_query \
+    "select sessionID from backup_session where sessionID='$1'" \
+    "grep '$1 started' \"$WORKDIR\"/sessions.txt -m 1 | awk '{print \$2}'")
   if [ -n "$SESSION" ]; then
     echo "Removing session $1 - please wait."
     __DELETEBACKUP "$1"
@@ -34,19 +32,14 @@ function delete_one(){
 function delete_old(){
   echo "Removing old backup folders - please wait."
   zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from old backup sessions."
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    OLDEST=$(date  +%Y%m%d%H%M%S -d "-$ROTATE_TIME days")
-    grep SESS "$WORKDIR"/sessions.txt | awk '{print $2}'| while read -r LINE; do
-      if [ "$(echo "$LINE" | cut -d- -f2)" -lt "$OLDEST" ]; then
-         __DELETEBACKUP "$LINE"
-      fi
-    done
-  elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
-    sqlite3 "$WORKDIR"/sessions.sqlite3 "select sessionID from backup_session where conclusion_date < datetime('now','-$ROTATE_TIME day')" | while read -r LINE; do
+  OLDEST=$(date +%Y%m%d%H%M%S -d "-$ROTATE_TIME days")
+  session_query \
+    "select sessionID from backup_session where conclusion_date < datetime('now','-$ROTATE_TIME day')" \
+    "grep SESS \"$WORKDIR\"/sessions.txt | awk -v oldest=\"$OLDEST\" '{n=split(\$2,a,\"-\"); if (n>=2 && a[2]+0 < oldest+0) print \$2}'" \
+  | while read -r LINE; do
       __DELETEBACKUP "$LINE"
     done
-    sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
-  fi
+  [[ $SESSION_TYPE == 'SQLITE3' ]] && sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
   zmlog local7.info "Zmbhousekeep: Clean old backups activity concluded."
 }
 
@@ -56,16 +49,13 @@ function delete_old(){
 function leeroy_jenkins(){
   echo "LEEROY JENKINS!!!!!"
   zmlog local7.info "Zmbhousekeep: Cleaning $WORKDIR from all the backup sessions."
-  if [[ $SESSION_TYPE == 'TXT' ]]; then
-    grep SESS "$WORKDIR"/sessions.txt | awk '{print $2}'| while read -r LINE; do
+  session_query \
+    "select sessionID from backup_session" \
+    "grep SESS \"$WORKDIR\"/sessions.txt | awk '{print \$2}'" \
+  | while read -r LINE; do
       __DELETEBACKUP "$LINE"
     done
-  elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
-    sqlite3 "$WORKDIR"/sessions.sqlite3 "select sessionID from backup_session" | while read -r LINE; do
-      __DELETEBACKUP "$LINE"
-    done
-    sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
-  fi
+  [[ $SESSION_TYPE == 'SQLITE3' ]] && sqlite3 "$WORKDIR"/sessions.sqlite3 "VACUUM"
   zmlog local7.info "Zmbhousekeep: Clean old backups activity concluded."
   echo "All the backups are deleted - Have a nice week :)"
 }
@@ -79,14 +69,10 @@ function __DELETEBACKUP(){
   ERR=$( (rm -rf "${WORKDIR:?}"/"${1:?}") 2>&1)
   BASHERRCODE=$?
   if [[ $BASHERRCODE -eq 0 ]]; then
-    if [[ $SESSION_TYPE == 'TXT' ]]; then
-      # grep -v exits 1 when all lines are filtered out (last session removed); || true prevents set -e from aborting
-      grep -v "$1" "${WORKDIR:?}"/sessions.txt > "${WORKDIR:?}"/.sessions.txt || true
-      mv "${WORKDIR:?}"/.sessions.txt "${WORKDIR:?}"/sessions.txt
-    elif [[ $SESSION_TYPE == 'SQLITE3' ]]; then
-      sqlite3 "${WORKDIR:?}"/sessions.sqlite3 "delete from backup_account where sessionID='$1'"
-      sqlite3 "${WORKDIR:?}"/sessions.sqlite3 "delete from backup_session where sessionID='$1'"
-    fi
+    # grep -v exits 1 when all lines are filtered out (last session removed); || true prevents set -e from aborting
+    session_query \
+      "delete from backup_account where sessionID='$1'; delete from backup_session where sessionID='$1'" \
+      "grep -v \"$1\" \"${WORKDIR:?}\"/sessions.txt > \"${WORKDIR:?}\"/.sessions.txt || true; mv \"${WORKDIR:?}\"/.sessions.txt \"${WORKDIR:?}\"/sessions.txt"
     echo "Backup session $1 removed."
     zmlog local7.info "Zmbhousekeep: Backup session $1 removed."
   else

@@ -55,6 +55,21 @@ function ldap_escape_filter() {
 }
 
 ################################################################################
+# session_query: Dispatch a session query to TXT or SQLite3 backend.
+# Options:
+#    $1 - SQL statement(s) for the SQLite3 backend
+#    $2 - Shell command string for the TXT backend (passed to eval)
+################################################################################
+function session_query() {
+  local sql="$1" txt_fallback_cmd="$2"
+  if [[ $SESSION_TYPE == "SQLITE3" ]]; then
+    sqlite3 "$WORKDIR/sessions.sqlite3" "$sql"
+  else
+    eval "$txt_fallback_cmd"
+  fi
+}
+
+################################################################################
 # clear_temp: Clear all the temporary files.
 ################################################################################
 function on_exit(){
@@ -67,7 +82,7 @@ function on_exit(){
     fi
   fi
   # shellcheck disable=SC2086
-  rm -rf "$TEMPSESSION" "$TEMPACCOUNT" "$TEMPINACCOUNT" "$TEMPDIR" $MESSAGE $TEMPSQL $FAILURE
+  rm -rf "$TEMPSESSION" "$TEMPACCOUNT" "$TEMPINACCOUNT" "$TEMPDIR" $MESSAGE $FAILURE
   zmlog local7.info "Zmbackup: Excluding the temporary files before close."
 }
 
@@ -84,8 +99,7 @@ function create_temp(){
   MESSAGE=$(mktemp)
   FAILURE=$(mktemp)
   TEMPSESSION=$(mktemp)
-  TEMPSQL=$(mktemp)
-  export TEMPDIR TEMPACCOUNT TEMPINACCOUNT MESSAGE FAILURE TEMPSESSION TEMPSQL
+  export TEMPDIR TEMPACCOUNT TEMPINACCOUNT MESSAGE FAILURE TEMPSESSION
 }
 
 ################################################################################
@@ -340,6 +354,7 @@ function export_function(){
   export -f zmlog
   export -f safe_sql_value
   export -f ldap_escape_filter
+  export -f session_query
   export -f __backupMailbox
   export -f __backupFullInc
   export -f __backupLdap
