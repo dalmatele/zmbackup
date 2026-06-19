@@ -17,6 +17,53 @@ function parse_session_name() {
 }
 
 ################################################################################
+# validate_email: Return 0 if $1 matches a basic email address pattern.
+################################################################################
+function validate_email() {
+  [[ "$1" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]
+}
+
+################################################################################
+# validate_domain: Return 0 if $1 matches a valid domain name pattern.
+################################################################################
+function validate_domain() {
+  [[ "$1" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]
+}
+
+################################################################################
+# validate_session_id: Return 0 if $1 matches a zmbackup session ID.
+# Format: {prefix}-{14-digit timestamp YYYYMMDDHHMMSS}.
+################################################################################
+function validate_session_id() {
+  [[ "$1" =~ ^(full|inc|ldap|domain|distlist|alias|mbox|signature)-[0-9]{14}$ ]]
+}
+
+################################################################################
+# validate_account_args: Validate a -a/--account email list or -d/--domain list.
+# $1 - flag (-a, --account, -d, --domain, or any other value; no-op for others)
+# $2 - comma-separated list to validate (only checked when $1 is -a/-d)
+# Prints an error and returns 1 if any value fails validation.
+################################################################################
+function validate_account_args() {
+  local flag="$1" values="$2" item
+  if [[ "$flag" == "-a" || "$flag" == "--account" ]] && [[ -n "$values" ]]; then
+    for item in $(printf '%s\n' "$values" | tr ',' '\n'); do
+      if ! validate_email "$item"; then
+        printf "Error! Invalid email address: %s\n" "$item"
+        return 1
+      fi
+    done
+  elif [[ "$flag" == "-d" || "$flag" == "--domain" ]] && [[ -n "$values" ]]; then
+    for item in $(printf '%s\n' "$values" | tr ',' '\n'); do
+      if ! validate_domain "$item"; then
+        printf "Error! Invalid domain name: %s\n" "$item"
+        return 1
+      fi
+    done
+  fi
+}
+
+################################################################################
 # zmlog: Write a log entry to both syslog and $LOGFILE.
 # Options:
 #    $1 - syslog priority (e.g. local7.info, local7.err, local7.warn)
@@ -351,6 +398,10 @@ function checkpid(){
 ################################################################################
 function export_function(){
   export -f parse_session_name
+  export -f validate_email
+  export -f validate_domain
+  export -f validate_session_id
+  export -f validate_account_args
   export -f zmlog
   export -f safe_sql_value
   export -f ldap_escape_filter

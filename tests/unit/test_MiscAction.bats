@@ -797,3 +797,247 @@ teardown() {
   run bash -c 'declare -F ldap_escape_filter'
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# validate_email
+# ---------------------------------------------------------------------------
+
+@test "validate_email: accepts a plain address" {
+  run validate_email "user@example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_email: accepts address with dots, plus, and hyphen in local part" {
+  run validate_email "user.name+tag-x@sub.example.co.uk"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_email: rejects a string with no @ sign" {
+  run validate_email "notanemail"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects a string with no domain part" {
+  run validate_email "user@"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects a string with no TLD" {
+  run validate_email "user@example"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects a single-character TLD" {
+  run validate_email "user@example.c"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects an empty string" {
+  run validate_email ""
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects an LDAP injection payload" {
+  run validate_email ")(uid=*"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_email: rejects a path traversal payload" {
+  run validate_email "../../etc/passwd@evil.com"
+  [ "$status" -ne 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# validate_domain
+# ---------------------------------------------------------------------------
+
+@test "validate_domain: accepts a two-label domain" {
+  run validate_domain "example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_domain: accepts a three-label domain" {
+  run validate_domain "sub.example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_domain: accepts a domain with hyphen" {
+  run validate_domain "my-domain.co.uk"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_domain: rejects a plain hostname with no dot" {
+  run validate_domain "localhost"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_domain: rejects a single-character TLD" {
+  run validate_domain "example.c"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_domain: rejects an empty string" {
+  run validate_domain ""
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_domain: rejects a string with shell metacharacters" {
+  run validate_domain 'evil; rm -rf /'
+  [ "$status" -ne 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# validate_session_id
+# ---------------------------------------------------------------------------
+
+@test "validate_session_id: accepts a valid full- session" {
+  run validate_session_id "full-20240101120000"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_session_id: accepts a valid inc- session" {
+  run validate_session_id "inc-20240615093045"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_session_id: accepts all valid prefixes" {
+  run validate_session_id "ldap-20240101000000";      [ "$status" -eq 0 ]
+  run validate_session_id "domain-20240101000000";    [ "$status" -eq 0 ]
+  run validate_session_id "distlist-20240101000000";  [ "$status" -eq 0 ]
+  run validate_session_id "alias-20240101000000";     [ "$status" -eq 0 ]
+  run validate_session_id "mbox-20240101000000";      [ "$status" -eq 0 ]
+  run validate_session_id "signature-20240101000000"; [ "$status" -eq 0 ]
+}
+
+@test "validate_session_id: rejects an unknown prefix" {
+  run validate_session_id "backup-20240101120000"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects a session ID with too few timestamp digits" {
+  run validate_session_id "full-2024010112000"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects a session ID with too many timestamp digits" {
+  run validate_session_id "full-202401011200001"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects a session ID with no hyphen separator" {
+  run validate_session_id "full20240101120000"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects an empty string" {
+  run validate_session_id ""
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects a path traversal payload" {
+  run validate_session_id "../../etc/passwd"
+  [ "$status" -ne 0 ]
+}
+
+@test "validate_session_id: rejects an SQL injection payload" {
+  run validate_session_id "'; DROP TABLE backup_session; --"
+  [ "$status" -ne 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# validate_account_args
+# ---------------------------------------------------------------------------
+
+@test "validate_account_args: accepts a valid email with -a flag" {
+  run validate_account_args "-a" "user@example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: accepts a comma-separated list of valid emails with -a" {
+  run validate_account_args "-a" "alice@example.com,bob@example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: accepts a valid email with --account flag" {
+  run validate_account_args "--account" "user@example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: rejects an invalid email with -a flag" {
+  run validate_account_args "-a" "notanemail"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Invalid email"* ]]
+}
+
+@test "validate_account_args: rejects the first bad email in a mixed list" {
+  run validate_account_args "-a" "good@example.com,bad-email,other@example.com"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"bad-email"* ]]
+}
+
+@test "validate_account_args: accepts a valid domain with -d flag" {
+  run validate_account_args "-d" "example.com"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: accepts a comma-separated list of valid domains with -d" {
+  run validate_account_args "-d" "example.com,sub.example.org"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: rejects an invalid domain with -d flag" {
+  run validate_account_args "-d" "notadomain"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Invalid domain"* ]]
+}
+
+@test "validate_account_args: is a no-op for unrecognised flags" {
+  run validate_account_args "--unknown" "anything"
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: is a no-op when no flag is provided" {
+  run validate_account_args "" ""
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_account_args: rejects a domain with shell metacharacters via -d" {
+  run validate_account_args "-d" 'evil; rm -rf /'
+  [ "$status" -ne 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# export_function: new validators exported
+# ---------------------------------------------------------------------------
+
+@test "export_function: exports validate_email" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F validate_email'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports validate_domain" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F validate_domain'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports validate_session_id" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F validate_session_id'
+  [ "$status" -eq 0 ]
+}
+
+@test "export_function: exports validate_account_args" {
+  source "${LIB_DIR}/BackupAction.sh"
+  source "${LIB_DIR}/ParallelAction.sh"
+  export_function
+  run bash -c 'declare -F validate_account_args'
+  [ "$status" -eq 0 ]
+}
