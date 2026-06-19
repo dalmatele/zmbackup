@@ -62,13 +62,12 @@ stub_all_temps() {
   MESSAGE="$(mktemp)"
   FAILURE="$(mktemp)"
   TEMPSESSION="$(mktemp)"
-  TEMPSQL="$(mktemp)"
-  export TEMPDIR TEMPACCOUNT TEMPINACCOUNT MESSAGE FAILURE TEMPSESSION TEMPSQL
+  export TEMPDIR TEMPACCOUNT TEMPINACCOUNT MESSAGE FAILURE TEMPSESSION
 }
 
 cleanup_temps() {
   for f in "${TEMPDIR:-}" "${TEMPACCOUNT:-}" "${TEMPINACCOUNT:-}" \
-            "${MESSAGE:-}" "${FAILURE:-}" "${TEMPSESSION:-}" "${TEMPSQL:-}"; do
+            "${MESSAGE:-}" "${FAILURE:-}" "${TEMPSESSION:-}"; do
     [ -n "$f" ] && rm -rf "$f"
   done
 }

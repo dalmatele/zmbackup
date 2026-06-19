@@ -101,11 +101,6 @@ teardown() {
   [ -f "$TEMPSESSION" ]
 }
 
-@test "create_temp: creates TEMPSQL file" {
-  create_temp
-  [ -f "$TEMPSQL" ]
-}
-
 @test "create_temp: all temp vars are exported" {
   create_temp
   export -p | grep -q ' TEMPDIR='
@@ -114,7 +109,6 @@ teardown() {
   export -p | grep -q ' MESSAGE='
   export -p | grep -q ' FAILURE='
   export -p | grep -q ' TEMPSESSION='
-  export -p | grep -q ' TEMPSQL='
 }
 
 # ---------------------------------------------------------------------------
