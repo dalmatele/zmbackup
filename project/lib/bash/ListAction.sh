@@ -22,7 +22,7 @@
 function build_listBKP()
 {
   if [ "$3" == "-d" ]; then
-    for i in $4; do
+    for i in $(echo "$4" | tr ',' ' '); do
       DC=",dc="
       DOMAIN="dc="${i//./$DC}
       ERR=$( (ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b "$DOMAIN" -LLL "$1" "$2" >> "$TEMPACCOUNT") 2>&1)

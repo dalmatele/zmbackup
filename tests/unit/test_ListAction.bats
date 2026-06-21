@@ -72,6 +72,33 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "build_listBKP: splits comma-separated -d list and processes each domain" {
+  MOCK_LDAPSEARCH_OUTPUT=""
+  LOCK_BACKUP="false"
+  run build_listBKP "(objectclass=zimbraAccount)" "zimbraMailDeliveryAddress" "-d" "example.com,test.com"
+  [ "$status" -eq 0 ]
+  count=$(echo "$output" | grep -c "found")
+  [ "$count" -eq 2 ]
+}
+
+@test "build_listBKP: each domain in comma-separated list converted to correct DC base" {
+  local bases_file="${WORKDIR}/ldap_bases.txt"
+  ldapsearch() {
+    local prev=""
+    for arg in "$@"; do
+      if [[ "$prev" == "-b" ]]; then
+        echo "$arg" >> "${bases_file}"
+      fi
+      prev="$arg"
+    done
+  }
+  export -f ldapsearch
+  LOCK_BACKUP="false"
+  build_listBKP "(objectclass=zimbraAccount)" "zimbraMailDeliveryAddress" "-d" "example.com,test.com"
+  grep -q "dc=example,dc=com" "${bases_file}"
+  grep -q "dc=test,dc=com" "${bases_file}"
+}
+
 # ---------------------------------------------------------------------------
 # build_listRST
 # ---------------------------------------------------------------------------
