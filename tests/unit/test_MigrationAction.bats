@@ -158,6 +158,28 @@ EOF
   [ "$type" = "Mailbox Backup" ]
 }
 
+@test "importsessionSQL: imports domain- session from TXT to SQLITE3" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "domain-20240108120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local count
+  count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select count(*) from backup_session where sessionID='domain-20240108120000'")
+  [ "$count" -eq 1 ]
+}
+
+@test "importsessionSQL: domain- session has correct type label" {
+  SESSION_TYPE="TXT"
+  _add_txt_sessions "domain-20240108120000"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  importsessionSQL
+  local type
+  type=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select type from backup_session where sessionID='domain-20240108120000'")
+  [ "$type" = "Domain Backup" ]
+}
+
 @test "importsessionSQL: imports signature- session from TXT to SQLITE3" {
   SESSION_TYPE="TXT"
   _add_txt_sessions "signature-20240107120000"
