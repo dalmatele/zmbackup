@@ -152,7 +152,7 @@ function uninstall() {
   echo -ne '####################  (100%)\r'
   printf "Preserve Backup Storage?[n/Y]"
   read -r OPT
-  if [[ $OPT == 'N' && $OPT == 'n' ]]; then
+  if [[ $OPT == 'N' || $OPT == 'n' ]]; then
     echo "Removing backup storage..."
     rm -rf "${WORKDIR:?}"/*
   fi

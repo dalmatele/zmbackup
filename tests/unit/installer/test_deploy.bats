@@ -232,3 +232,39 @@ user@example.com"
   echo "N" | uninstall
   [ ! -f "${ZMBKP_SRC}/zmbackup" ]
 }
+
+@test "uninstall: deletes backup storage contents when user answers N" {
+  mkdir -p "$ZMBKP_CONF" "$ZMBKP_LIB" "${DEPLOY_ROOT}/backup"
+  echo "WORKDIR='${DEPLOY_ROOT}/backup'" > "${ZMBKP_CONF}/zmbackup.conf"
+  touch "${DEPLOY_ROOT}/backup/session.txt"
+  MOCK_SU_OUTPUT=""
+  echo "N" | uninstall
+  [ ! -f "${DEPLOY_ROOT}/backup/session.txt" ]
+}
+
+@test "uninstall: deletes backup storage contents when user answers n" {
+  mkdir -p "$ZMBKP_CONF" "$ZMBKP_LIB" "${DEPLOY_ROOT}/backup"
+  echo "WORKDIR='${DEPLOY_ROOT}/backup'" > "${ZMBKP_CONF}/zmbackup.conf"
+  touch "${DEPLOY_ROOT}/backup/session.txt"
+  MOCK_SU_OUTPUT=""
+  echo "n" | uninstall
+  [ ! -f "${DEPLOY_ROOT}/backup/session.txt" ]
+}
+
+@test "uninstall: preserves backup storage when user answers Y" {
+  mkdir -p "$ZMBKP_CONF" "$ZMBKP_LIB" "${DEPLOY_ROOT}/backup"
+  echo "WORKDIR='${DEPLOY_ROOT}/backup'" > "${ZMBKP_CONF}/zmbackup.conf"
+  touch "${DEPLOY_ROOT}/backup/session.txt"
+  MOCK_SU_OUTPUT=""
+  echo "Y" | uninstall
+  [ -f "${DEPLOY_ROOT}/backup/session.txt" ]
+}
+
+@test "uninstall: preserves backup storage when user answers y" {
+  mkdir -p "$ZMBKP_CONF" "$ZMBKP_LIB" "${DEPLOY_ROOT}/backup"
+  echo "WORKDIR='${DEPLOY_ROOT}/backup'" > "${ZMBKP_CONF}/zmbackup.conf"
+  touch "${DEPLOY_ROOT}/backup/session.txt"
+  MOCK_SU_OUTPUT=""
+  echo "y" | uninstall
+  [ -f "${DEPLOY_ROOT}/backup/session.txt" ]
+}
