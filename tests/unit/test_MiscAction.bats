@@ -1041,3 +1041,87 @@ teardown() {
   run bash -c 'declare -F validate_account_args'
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# on_exit
+# ---------------------------------------------------------------------------
+
+# Helper: spawn a subshell that sources MiscAction.sh with notify_finish
+# stubbed, then exits with the given code. $1=exit code, $2=STYPE (default
+# "Full Account"), $3=SESSION (default "full-20240101120000").
+_on_exit_run() {
+  local _code="$1"
+  local _stype="Full Account"
+  local _session="full-20240101120000"
+  [[ "$#" -ge 2 ]] && _stype="$2"
+  [[ "$#" -ge 3 ]] && _session="$3"
+  run bash -c "
+    export PATH='${MOCKS_DIR}:${PATH}'
+    export LOGFILE='${WORKDIR}/zmbackup.log'
+    export STYPE='${_stype}'
+    export SESSION='${_session}'
+    _msg=\$(mktemp); _ts=\$(mktemp); _ta=\$(mktemp); _ti=\$(mktemp); _fa=\$(mktemp)
+    _td=\$(mktemp -d)
+    export MESSAGE=\"\$_msg\" TEMPSESSION=\"\$_ts\" TEMPACCOUNT=\"\$_ta\"
+    export TEMPINACCOUNT=\"\$_ti\" TEMPDIR=\"\$_td\" FAILURE=\"\$_fa\"
+    notify_finish() { echo \"NOTIFY:\$1:\$2:\$3\"; }
+    export -f notify_finish
+    source '${LIB_DIR}/MiscAction.sh'
+    exit ${_code}
+  "
+}
+
+@test "on_exit: sends FAILURE when exit code is 1" {
+  _on_exit_run 1
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends FAILURE when exit code is 2 (validate_config failure)" {
+  _on_exit_run 2
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends FAILURE when exit code is 3 (config error)" {
+  _on_exit_run 3
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends FAILURE when exit code is 4 (PID lock)" {
+  _on_exit_run 4
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends FAILURE when exit code is 5 (bad backup option)" {
+  _on_exit_run 5
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends FAILURE when exit code is 255 (GNU Parallel signal kill)" {
+  _on_exit_run 255
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:FAILURE"* ]]
+}
+
+@test "on_exit: sends SUCCESS when exit code is 0 and SESSION is set" {
+  _on_exit_run 0
+  [[ "$output" == *"NOTIFY:full-20240101120000:Full Account:SUCCESS"* ]]
+}
+
+@test "on_exit: sends no notification when exit code is 0 and SESSION is empty" {
+  _on_exit_run 0 "Full Account" ""
+  [[ "$output" != *"NOTIFY:"* ]]
+}
+
+@test "on_exit: sends no notification when STYPE is empty regardless of exit code" {
+  _on_exit_run 1 "" "full-20240101120000"
+  [[ "$output" != *"NOTIFY:"* ]]
+}
+
+@test "on_exit: passes SESSION and STYPE to notify_finish on failure" {
+  _on_exit_run 3 "Incremental Account" "inc-20240615093045"
+  [[ "$output" == *"NOTIFY:inc-20240615093045:Incremental Account:FAILURE"* ]]
+}
+
+@test "on_exit: passes SESSION and STYPE to notify_finish on success" {
+  _on_exit_run 0 "Mailbox" "mbox-20240615093045"
+  [[ "$output" == *"NOTIFY:mbox-20240615093045:Mailbox:SUCCESS"* ]]
+}
