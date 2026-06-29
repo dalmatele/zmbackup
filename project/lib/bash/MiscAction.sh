@@ -122,9 +122,9 @@ function session_query() {
 function on_exit(){
   BASHERRCODE=$?
   if [[ -n $STYPE ]]; then
-    if [[ $BASHERRCODE -eq 1 ]]; then
+    if [[ $BASHERRCODE -ne 0 ]]; then
       notify_finish "$SESSION" "$STYPE" "FAILURE"
-    elif [[ $BASHERRCODE -eq 0 && -n $SESSION ]]; then
+    elif [[ -n $SESSION ]]; then
       notify_finish "$SESSION" "$STYPE" "SUCCESS"
     fi
   fi
