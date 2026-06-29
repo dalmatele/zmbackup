@@ -46,8 +46,12 @@ function mailbox_backup()
     DATE=$(session_query \
       "select MAX(initial_date) from backup_account where email='${SAFE_EMAIL}' and (sessionID like 'full%' or sessionID like 'inc%' or sessionID like 'mbox%')" \
       "grep \"$1\" \"$WORKDIR\"/sessions.txt | tail -1 | awk -F: '{print \$3}' | cut -d- -f2")
-    YESTERDAY=$(date -d "$DATE" --date='-48 hours' +%m/%d/%Y)
-    AFTER='&'"query=after:\"$YESTERDAY\""
+    if [[ -n "$DATE" ]]; then
+      YESTERDAY=$(date -d "$DATE" --date='-48 hours' +%m/%d/%Y)
+      AFTER='&'"query=after:\"$YESTERDAY\""
+    else
+      AFTER=''
+    fi
   fi
   if $ZMMAILBOX -t0 -z -m "$1" getRestURL --output "$TEMPDIR"/"$1".tgz "/?fmt=tgz&resolve=skip$AFTER" > "$TEMP_CLI_OUTPUT" 2>&1; then
     if [[ -s $TEMPDIR/$1.tgz ]]; then

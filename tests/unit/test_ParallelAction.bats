@@ -102,6 +102,52 @@ teardown() {
   ! grep -q "\[local7.err\]" "${LOGFILE}"
 }
 
+@test "mailbox_backup: incremental with no prior backup performs full pull (TXT mode)" {
+  INC="TRUE"
+  SESSION_TYPE="TXT"
+  # sessions.txt has no entry for new@example.com — DATE will be empty
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  # Capture the URL argument passed to zmmailbox
+  zmmailbox() {
+    for arg in "$@"; do
+      echo "$arg" >> "${WORKDIR}/zmmailbox_args.txt"
+    done
+    echo "mock tgz content" > "${TEMPDIR}/new@example.com.tgz"
+    return 0
+  }
+  export -f zmmailbox
+  mailbox_backup "new@example.com"
+  [ "$ERRCODE" -eq 0 ]
+  # The URL must NOT contain an 'after:' date filter
+  run grep -q "after:" "${WORKDIR}/zmmailbox_args.txt"
+  [ "$status" -ne 0 ]
+}
+
+@test "mailbox_backup: incremental with no prior backup performs full pull (SQLITE3 mode)" {
+  INC="TRUE"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  # DB has a session but NO backup_account row for new@example.com — DATE will be empty
+  sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "insert into backup_session values('full-20240101120000','2024-01-01T12:00:00.000',
+     '2024-01-01T12:30:00.000','100M','Full Backup','FINISHED')"
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  zmmailbox() {
+    for arg in "$@"; do
+      echo "$arg" >> "${WORKDIR}/zmmailbox_args.txt"
+    done
+    echo "mock tgz content" > "${TEMPDIR}/new@example.com.tgz"
+    return 0
+  }
+  export -f zmmailbox
+  mailbox_backup "new@example.com"
+  [ "$ERRCODE" -eq 0 ]
+  run grep -q "after:" "${WORKDIR}/zmmailbox_args.txt"
+  [ "$status" -ne 0 ]
+}
+
 @test "mailbox_backup: incremental with TXT session reads date from sessions.txt" {
   INC="TRUE"
   SESSION_TYPE="TXT"
