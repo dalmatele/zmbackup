@@ -78,7 +78,7 @@ teardown() {
   SESSION="full-20240101120000"
   SESSION_TYPE="TXT"
   MOCK_LDAPSEARCH_FAIL=1
-  __backupFullInc "user@example.com" "$ACOBJECT"
+  __backupFullInc "user@example.com" "$ACOBJECT" || true
   run grep -q "user@example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
@@ -88,7 +88,7 @@ teardown() {
   SESSION_TYPE="TXT"
   MOCK_LDAPSEARCH_FAIL=0
   MOCK_ZMMAILBOX_FAIL=1
-  __backupFullInc "user@example.com" "$ACOBJECT"
+  __backupFullInc "user@example.com" "$ACOBJECT" || true
   run grep -q "user@example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
@@ -121,7 +121,7 @@ teardown() {
   SESSION="alias-20240101120000"
   SESSION_TYPE="TXT"
   MOCK_LDAPSEARCH_FAIL=1
-  __backupLdap "alias@example.com" "(objectclass=zimbraAlias)"
+  __backupLdap "alias@example.com" "(objectclass=zimbraAlias)" || true
   run grep -q "alias@example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
@@ -154,7 +154,7 @@ teardown() {
   SESSION="domain-20240101120000"
   SESSION_TYPE="TXT"
   MOCK_LDAPSEARCH_FAIL=1
-  __backupDomain "example.com" "(objectclass=zimbraDomain)"
+  __backupDomain "example.com" "(objectclass=zimbraDomain)" || true
   run grep -q "example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
@@ -192,7 +192,7 @@ teardown() {
   SESSION_TYPE="TXT"
   INC="FALSE"
   MOCK_ZMMAILBOX_FAIL=1
-  __backupMailbox "user@example.com" "$ACOBJECT"
+  __backupMailbox "user@example.com" "$ACOBJECT" || true
   run grep -q "user@example.com" "$TEMPSESSION"
   [ "$status" -ne 0 ]
 }
@@ -370,4 +370,76 @@ teardown() {
   local count
   count=$(sqlite3 "${WORKDIR}/sessions.sqlite3" "select count(*) from backup_session")
   [ "$count" -eq 1 ]
+}
+
+# ---------------------------------------------------------------------------
+# backup_main: parallel exit code → session status
+# ---------------------------------------------------------------------------
+
+@test "backup_main: records FINISHED in SQLITE3 mode when all parallel jobs succeed" {
+  SESSION="full-20240101120000"
+  STYPE="Full Account"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  MOCK_LDAPSEARCH_FAIL=0
+  MOCK_ZMMAILBOX_FAIL=0
+  MOCK_ZMMAILBOX_EMPTY=0
+  backup_main "$ACOBJECT" "$ACFILTER" "-a" "user@example.com"
+  local status_val
+  status_val=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select status from backup_session where sessionID='full-20240101120000'")
+  [ "$status_val" = "FINISHED" ]
+}
+
+@test "backup_main: records FAILED in SQLITE3 mode when parallel jobs fail (full session)" {
+  SESSION="full-20240101120000"
+  STYPE="Full Account"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  MOCK_LDAPSEARCH_FAIL=1
+  run backup_main "$ACOBJECT" "$ACFILTER" "-a" "user@example.com"
+  local status_val
+  status_val=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select status from backup_session where sessionID='full-20240101120000'")
+  [ "$status_val" = "FAILED" ]
+}
+
+@test "backup_main: records FAILED in SQLITE3 mode when parallel jobs fail (mbox session)" {
+  SESSION="mbox-20240101120000"
+  STYPE="Mailbox"
+  SESSION_TYPE="SQLITE3"
+  INC="FALSE"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  MOCK_ZMMAILBOX_FAIL=1
+  run backup_main "$ACOBJECT" "$ACFILTER" "-a" "user@example.com"
+  local status_val
+  status_val=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select status from backup_session where sessionID='mbox-20240101120000'")
+  [ "$status_val" = "FAILED" ]
+}
+
+@test "backup_main: records FAILED in SQLITE3 mode when parallel jobs fail (domain session)" {
+  SESSION="domain-20240101120000"
+  STYPE="Domain"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  MOCK_LDAPSEARCH_FAIL=1
+  run backup_main "$DOMOBJECT" "$DOMFILTER" "-a" "example.com"
+  local status_val
+  status_val=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select status from backup_session where sessionID='domain-20240101120000'")
+  [ "$status_val" = "FAILED" ]
+}
+
+@test "backup_main: records FAILED in SQLITE3 mode when parallel jobs fail (ldap/alias session)" {
+  SESSION="alias-20240101120000"
+  STYPE="Alias"
+  SESSION_TYPE="SQLITE3"
+  sqlite3 "${WORKDIR}/sessions.sqlite3" < "${PROJECT_ROOT}/project/lib/sqlite3/database.sql"
+  MOCK_LDAPSEARCH_FAIL=1
+  run backup_main "(objectclass=zimbraAlias)" "uid" "-a" "alias@example.com"
+  local status_val
+  status_val=$(sqlite3 "${WORKDIR}/sessions.sqlite3" \
+    "select status from backup_session where sessionID='alias-20240101120000'")
+  [ "$status_val" = "FAILED" ]
 }
