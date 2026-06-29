@@ -146,18 +146,24 @@ function backup_main()
       parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupLdap '{}' '$1'" < "$TEMPACCOUNT"
     fi
     PARALLEL_EXIT=$?
-    mv "$TEMPDIR" "$WORKDIR/$SESSION" && rm -rf "$TEMPDIR"
-    chmod -R 775 "$WORKDIR"/"$SESSION"
-    DATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
-    SIZE=$(du -sh "$WORKDIR"/"$SESSION" | awk '{print $1}')
-    if [[ $PARALLEL_EXIT -eq 0 ]]; then
-      STATUS="FINISHED"
+    if mv "$TEMPDIR" "$WORKDIR/$SESSION"; then
+      chmod -R 775 "$WORKDIR/$SESSION"
+      DATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
+      SIZE=$(du -sh "$WORKDIR/$SESSION" | awk '{print $1}')
+      if [[ $PARALLEL_EXIT -eq 0 ]]; then
+        STATUS="FINISHED"
+      else
+        STATUS="FAILED"
+      fi
+      session_query \
+        "update backup_session set conclusion_date='$DATE',size='$SIZE',status='$STATUS' where sessionID='$SESSION'" \
+        "echo \"SESSION: $SESSION completed in $(date)\" >> \"$TEMPSESSION\"; cat \"$TEMPSESSION\" >> \"$WORKDIR\"/sessions.txt"
     else
-      STATUS="FAILED"
+      zmlog local7.err "Zmbackup: Failed to move staged backup to $WORKDIR/$SESSION"
+      session_query \
+        "update backup_session set status='FAILED' where sessionID='$SESSION'" \
+        "echo \"SESSION: $SESSION failed to move staged data on $(date)\" >> \"$TEMPSESSION\"; cat \"$TEMPSESSION\" >> \"$WORKDIR\"/sessions.txt"
     fi
-    session_query \
-      "update backup_session set conclusion_date='$DATE',size='$SIZE',status='$STATUS' where sessionID='$SESSION'" \
-      "echo \"SESSION: $SESSION completed in $(date)\" >> \"$TEMPSESSION\"; cat \"$TEMPSESSION\" >> \"$WORKDIR\"/sessions.txt"
     zmlog local7.info "Zmbackup: Backup session $SESSION finished on $(date)"
     echo "Backup session $SESSION finished on $(date)"
   else
