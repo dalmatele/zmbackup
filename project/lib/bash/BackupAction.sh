@@ -25,6 +25,7 @@ function __backupFullInc(){
         "echo \"$SESSION:$1:$(date +%m/%d/%y)\" >> \"$TEMPSESSION\""
     fi
   fi
+  return "$ERRCODE"
 }
 
 ################################################################################
@@ -49,6 +50,7 @@ function __backupLdap(){
       "insert into backup_account (email,sessionID,account_size,initial_date,conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');" \
       "echo \"$SESSION:$1:$(date +%m/%d/%y)\" >> \"$TEMPSESSION\""
   fi
+  return "$ERRCODE"
 }
 
 ################################################################################
@@ -69,6 +71,7 @@ function __backupDomain(){
       "insert into backup_account (email,sessionID,account_size,initial_date,conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');" \
       "echo \"$SESSION:$1:$(date +%m/%d/%y)\" >> \"$TEMPSESSION\""
   fi
+  return "$ERRCODE"
 }
 
 ################################################################################
@@ -90,6 +93,7 @@ function __backupMailbox(){
       "insert into backup_account (email,sessionID,account_size,initial_date,conclusion_date) values ('${SAFE_EMAIL}','$SESSION','$SIZE','$SDATE','$EDATE');" \
       "echo \"$SESSION:$1:$(date +%m/%d/%y)\" >> \"$TEMPSESSION\""
   fi
+  return "$ERRCODE"
 }
 
 ################################################################################
@@ -141,12 +145,18 @@ function backup_main()
     else
       parallel --jobs "$MAX_PARALLEL_PROCESS" "__backupLdap '{}' '$1'" < "$TEMPACCOUNT"
     fi
+    PARALLEL_EXIT=$?
     mv "$TEMPDIR" "$WORKDIR/$SESSION" && rm -rf "$TEMPDIR"
     chmod -R 775 "$WORKDIR"/"$SESSION"
     DATE=$(date +%Y-%m-%dT%H:%M:%S.%N)
     SIZE=$(du -sh "$WORKDIR"/"$SESSION" | awk '{print $1}')
+    if [[ $PARALLEL_EXIT -eq 0 ]]; then
+      STATUS="FINISHED"
+    else
+      STATUS="FAILED"
+    fi
     session_query \
-      "update backup_session set conclusion_date='$DATE',size='$SIZE',status='FINISHED' where sessionID='$SESSION'" \
+      "update backup_session set conclusion_date='$DATE',size='$SIZE',status='$STATUS' where sessionID='$SESSION'" \
       "echo \"SESSION: $SESSION completed in $(date)\" >> \"$TEMPSESSION\"; cat \"$TEMPSESSION\" >> \"$WORKDIR\"/sessions.txt"
     zmlog local7.info "Zmbackup: Backup session $SESSION finished on $(date)"
     echo "Backup session $SESSION finished on $(date)"
