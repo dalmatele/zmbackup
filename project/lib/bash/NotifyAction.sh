@@ -49,9 +49,9 @@ function notify_finish()
       BASHERRCODE=$?
       if [[ $BASHERRCODE -eq 0 ]]; then
         if [[ "$1" == "mbox"* ]]; then
-          QTDE=$(find "$WORKDIR"/"$1"/*.tgz | wc -l)
+          QTDE=$(find "$WORKDIR/$1" -name "*.tgz" | wc -l)
         else
-          QTDE=$(find "$WORKDIR"/"$1"/*.ldiff | wc -l)
+          QTDE=$(find "$WORKDIR/$1" -name "*.ldiff" | wc -l)
         fi
       else
         SIZE=0
