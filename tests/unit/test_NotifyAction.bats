@@ -152,6 +152,67 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "notify_finish: reports zero count and no error when mbox session dir has no .tgz files" {
+  local session="mbox-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  run notify_finish "$session" "Mailbox" "SUCCESS"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "notify_finish: reports zero count and no error when non-mbox session dir has no .ldiff files" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  run notify_finish "$session" "Full Account" "SUCCESS"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "notify_finish: email reports Accounts: 0 when mbox session dir has no .tgz files" {
+  local session="mbox-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  notify_finish "$session" "Mailbox" "SUCCESS"
+  grep -q "Accounts: 0" "$MESSAGE"
+}
+
+@test "notify_finish: email reports Accounts: 0 when non-mbox session dir has no .ldiff files" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  notify_finish "$session" "Full Account" "SUCCESS"
+  grep -q "Accounts: 0" "$MESSAGE"
+}
+
+@test "notify_finish: email reports correct count for multiple .tgz files in mbox session" {
+  local session="mbox-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  touch "${WORKDIR}/${session}/user1@example.com.tgz"
+  touch "${WORKDIR}/${session}/user2@example.com.tgz"
+  touch "${WORKDIR}/${session}/user3@example.com.tgz"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  notify_finish "$session" "Mailbox" "SUCCESS"
+  grep -q "Accounts: 3" "$MESSAGE"
+}
+
+@test "notify_finish: email reports correct count for multiple .ldiff files in non-mbox session" {
+  local session="full-20240101120000"
+  mkdir -p "${WORKDIR}/${session}"
+  touch "${WORKDIR}/${session}/user1@example.com.ldiff"
+  touch "${WORKDIR}/${session}/user2@example.com.ldiff"
+  ENABLE_EMAIL_NOTIFY="all"
+  MOCK_SENDMAIL_FAIL=0
+  notify_finish "$session" "Full Account" "SUCCESS"
+  grep -q "Accounts: 2" "$MESSAGE"
+}
+
 @test "notify_finish: succeeds even when sendmail fails" {
   local session="full-20240101120000"
   mkdir -p "${WORKDIR}/${session}"
