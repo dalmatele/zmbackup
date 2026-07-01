@@ -10,8 +10,10 @@
 ################################################################################
 function delete_one(){
   local RETCODE=0
+  local SAFE_SESSION
+  SAFE_SESSION=$(safe_sql_value "$1")
   SESSION=$(session_query \
-    "select sessionID from backup_session where sessionID='$1'" \
+    "select sessionID from backup_session where sessionID='${SAFE_SESSION}'" \
     "grep '$1 started' \"$WORKDIR\"/sessions.txt -m 1 | awk '{print \$2}'")
   if [ -n "$SESSION" ]; then
     echo "Removing session $1 - please wait."
