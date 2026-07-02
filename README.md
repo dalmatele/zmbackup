@@ -76,7 +76,7 @@ Now, install the packages **parallel**, **wget**, **sqlite3** and **curl** in yo
 Download the latest package with the BETA tag in "Release" section, or git clone the development branch:
 
 ```
-git clone -b master https://github.com/dalmate/zmbackup.git
+git clone -b master https://github.com/lucascbeyeler/zmbackup.git
 ```
 
 Inside the project folder, execute the script **install.sh** and follow all the instructions to install the project. To validate if the script is installed, change to your server's zimbra user and execute zmbackup -v.
