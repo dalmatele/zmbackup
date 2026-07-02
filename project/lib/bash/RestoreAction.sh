@@ -12,8 +12,10 @@
 ################################################################################
 function restore_main_mailbox()
 {
+  local SAFE_SESSION
+  SAFE_SESSION=$(safe_sql_value "$1")
   SESSION=$(session_query \
-    "select * from backup_session where sessionID='$1'" \
+    "select * from backup_session where sessionID='${SAFE_SESSION}'" \
     "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     printf "Restore mail process with session %s started at %s" "$1" "$(date)"
@@ -77,8 +79,10 @@ function restore_main_mailbox()
 ################################################################################
 function restore_main_domain()
 {
+  local SAFE_SESSION
+  SAFE_SESSION=$(safe_sql_value "$1")
   SESSION=$(session_query \
-    "select * from backup_session where sessionID='$1'" \
+    "select * from backup_session where sessionID='${SAFE_SESSION}'" \
     "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     echo "Restore Domain LDAP process with session $1 started at $(date)"
@@ -111,8 +115,10 @@ function restore_main_domain()
 ################################################################################
 function restore_main_ldap()
 {
+  local SAFE_SESSION
+  SAFE_SESSION=$(safe_sql_value "$1")
   SESSION=$(session_query \
-    "select * from backup_session where sessionID='$1'" \
+    "select * from backup_session where sessionID='${SAFE_SESSION}'" \
     "grep -E ': $1 started' \"$WORKDIR\"/sessions.txt | grep 'started' | awk '{print \$2}' | sort | uniq")
   if [ -n "$SESSION" ]; then
     echo "Restore LDAP process with session $1 started at $(date)"
